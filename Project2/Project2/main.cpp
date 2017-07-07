@@ -3,6 +3,7 @@
 #include <tesseract/baseapi.h>
 #include <opencv2/opencv.hpp>
 #include <string>
+#include <iostream>
 #include "main.h"
 
 
@@ -37,18 +38,32 @@ std::string UTF8toSJIS(const char* src) {
 	return strSJis;
 }
 
+void detectLines(cv::Mat image, cv::Mat original_image) {
+	std::vector<cv::Vec4i> lines;
+	cv::HoughLinesP(image, lines, 5, CV_PI / 180.0 * 90, 200, 30, 5);
+		
+	//Draw detected segments on the original image.
+	if(!lines.empty()){
+		for (auto it = lines.begin(); it != lines.end(); ++it){
+			cv::Vec4i pt = *it;
+			cv::line(original_image, cv::Point(pt[0], pt[1]), cv::Point(pt[2], pt[3]), cv::Scalar(0, 255, 0), 1);
+			std::cout << "(" << pt[0] << "," << pt[1] << ")-(" << pt[2] << "," << pt[3] << ")" << std::endl;
+		}
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	tesseract::TessBaseAPI tess;
 	tess.Init("C:/Users/MEIP-users/Documents/tesseract-3.02.02-win32-lib-include-dirs/tessdata", "eng");
 
-	//文字認識
+	//コード認識
 	STRING text_out;
 	tess.ProcessPages("C:/Users/MEIP-users/Documents/score_3.png", NULL, 0, &text_out);
 	tesseract::ResultIterator* ri = tess.GetIterator();
 	tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
 	
-	//文字格納
+	//コード格納
 	std::vector<detectedText> dictionary;//コード保管用
 	if (ri != 0) {
 		do {
@@ -67,6 +82,19 @@ int main(int argc, char* argv[])
 		} while (ri->Next(level));
 	}
 
-	getchar();
+	//opencvによる楽譜認識
+	cv::Mat score = cv::imread("C:/Users/MEIP-users/Documents/score_3.png");
+	cv::imshow("score", score);
+	cv::Mat gray_score;
+	cv::Mat binarized;
+	cv::cvtColor(score, gray_score, CV_BGR2GRAY);//一応グレースケールに
+	cv::imshow("gray_score", gray_score);
+	cv::threshold(gray_score, binarized,224, 255, cv::THRESH_BINARY_INV);
+	cv::imshow("binarized", binarized);
+
+	//五線の認識
+	detectLines(binarized,score);
+	cv::imshow("score", score);
+	cv::waitKey();
 	return 0;
 }
