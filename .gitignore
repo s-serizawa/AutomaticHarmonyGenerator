@@ -30,3 +30,12 @@
 *.exe
 *.out
 *.app
+*.tlog
+*.pdb
+*.log
+*.ipdb
+*.iobj
+*.idb
+*.ilk
+Project2/.vs/Project2/v14/.suo
+Project2/Project2.VC.VC.opendb
