@@ -3,6 +3,8 @@
 #include <tesseract/baseapi.h>
 #include <opencv2/opencv.hpp>
 #include <string>
+#include "main.h"
+
 
 #ifdef _DEBUG
 #pragma comment(lib, "libtesseract302d.lib")
@@ -40,12 +42,14 @@ int main(int argc, char* argv[])
 	tesseract::TessBaseAPI tess;
 	tess.Init("C:/Users/MEIP-users/Documents/tesseract-3.02.02-win32-lib-include-dirs/tessdata", "eng");
 
+	//文字認識
 	STRING text_out;
 	tess.ProcessPages("C:/Users/MEIP-users/Documents/score_3.png", NULL, 0, &text_out);
-
 	tesseract::ResultIterator* ri = tess.GetIterator();
 	tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
-
+	
+	//文字格納
+	std::vector<detectedText> dictionary;//コード保管用
 	if (ri != 0) {
 		do {
 			const char* word = ri->GetUTF8Text(level);
@@ -55,11 +59,11 @@ int main(int argc, char* argv[])
 
 			int x1, y1, x2, y2;//x:横軸(右ほど大) y:縦軸(下ほど大)　
 			ri->BoundingBox(level, &x1, &y1, &x2, &y2);
-			float conf = ri->Confidence(level);
-
-			std::string text = UTF8toSJIS(word);
-
-			printf("(%d, %d)-(%d, %d) : %.1f%% : %s \n", x1, y1, x2, y2, conf, text.c_str());
+			if (ri->Confidence(level) > 70.0f) {
+				detectedText code(x1, y1, x2, y2, ri->Confidence(level), UTF8toSJIS(word));
+				printf("(%d, %d)-(%d, %d) : %.1f%% : %s \n", code.getX1(), code.getY1(), code.getX2(), code.getY2(), code.getConf(), code.getText().c_str());
+				dictionary.push_back(code);
+			}
 		} while (ri->Next(level));
 	}
 
