@@ -40,7 +40,7 @@ std::string UTF8toSJIS(const char* src) {
 
 void detectLines(cv::Mat image, cv::Mat original_image) {
 	std::vector<cv::Vec4i> lines;
-	cv::HoughLinesP(image, lines, 5, CV_PI / 180.0 * 90, 200, 30, 5);
+	cv::HoughLinesP(image, lines, 4, CV_PI / 180.0 * 90, 1000, 400, 10);
 		
 	//Draw detected segments on the original image.
 	if(!lines.empty()){
