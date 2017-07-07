@@ -52,8 +52,26 @@ void detectLines(cv::Mat image, cv::Mat original_image) {
 	}
 }
 
+void detectNotes(cv::Mat image, cv::Mat original_image) {
+	int template_width = 15;
+	int template_height = 15;
+	cv::Mat ell = cv::Mat::zeros(9, 9, CV_8UC1);
+	cv::ellipse(ell, cv::Point(4, 4), cv::Size(3, 5), 80, 0, 360, 255, -1, CV_AA);
+	cv::imshow("ellipse", ell);
+	cv::Mat matches; 
+	cv::matchTemplate(image, ell, matches, CV_TM_CCORR_NORMED);
+	float threshold = 0.73f;
+	for (int y = 0; y < matches.rows; y++) {
+		for (int x = 0; x < matches.cols; x++){
+			if(matches.at<float>(y,x) > threshold){
+				cv::rectangle(original_image, cv::Point(x, y), cv::Point(x + template_width, y + template_height), cv::Scalar(255, 0, 0), 1);
+			}
+		}
+	}
+}
+
 int main(int argc, char* argv[])
-{
+{	
 	tesseract::TessBaseAPI tess;
 	tess.Init("C:/Users/MEIP-users/Documents/tesseract-3.02.02-win32-lib-include-dirs/tessdata", "eng");
 
@@ -82,6 +100,8 @@ int main(int argc, char* argv[])
 		} while (ri->Next(level));
 	}
 
+	
+
 	//opencvによる楽譜認識
 	cv::Mat score = cv::imread("C:/Users/MEIP-users/Documents/score_3.png");
 	cv::imshow("score", score);
@@ -95,6 +115,11 @@ int main(int argc, char* argv[])
 	//五線の認識
 	detectLines(binarized,score);
 	cv::imshow("score", score);
+	
+	//符頭の認識
+	detectNotes(binarized, score);
+	cv::imshow("score", score);
+	
 	cv::waitKey();
 	return 0;
 }
