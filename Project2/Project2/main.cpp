@@ -143,13 +143,14 @@ void detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
 
 	std::vector<int> lines_y = lines_info.getLinesY();
 	int scale;
+	//îºâπè„â∫ÇÕÇ»Çµ
 	for (int i = 0; i < matches_pos.size(); i++) {
 		int x = matches_pos[i][0] + ell_center.x;
 		int y = matches_pos[i][1] + ell_center.y;
 		if (y > lines_y[lines_y.size() - 1]) {//àÍî‘â∫ÇÃê¸ÇÊÇËâ∫
 			scale = (y - lines_y[lines_y.size() - 1]) / (interval / 2) * (-2);
 			if ((y - lines_y[lines_y.size() - 1]) % (interval / 2) > (interval / 2) / 2.0) {
-				scale -= 1;
+				scale -= 2;
 			}
 			scale += NOTE_MI;
 			drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
