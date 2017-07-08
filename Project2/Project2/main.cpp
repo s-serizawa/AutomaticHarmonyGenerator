@@ -100,24 +100,26 @@ void drawingNotesInfo(cv::Mat original_image, int scale, int x, int y) {
 
 void detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
 	int interval = lines_info.getLinesInterval();
-	int ignorance_left = 30;//五線の左端から右へ何ピクセルまで無視するか
-	int ignorance_y = interval * 2;//五線から上下何ピクセル無視するか
+	int ignorance_left = 34;//五線の左端から右へ何ピクセルまで無視するか
+	int ignorance_right = 10;//五線の右端から左へ何ピクセルまで無視するか
+	int ignorance_y = interval * 3;//五線から上下何ピクセル無視するか
 	cv::Mat ell = cv::Mat::zeros(9, 9, CV_8UC1);
 	cv::Point ell_center = cv::Point(4, 4);
 	cv::ellipse(ell, ell_center, cv::Size(3, 5), 60, 0, 360, 255, -1, CV_AA);
+	//cv::ellipse(ell, ell_center, cv::Size(3, 5), 55, 0, 360, 255, 2, 8);// CV_AA);
 	cv::imshow("ellipse", ell);
 	
 	cv::Mat matches; 
 	cv::matchTemplate(image, ell, matches, CV_TM_CCORR_NORMED);
 	
 	//音階の認識
-	float threshold = 0.8f;
+	float threshold = 0.7f;
 	
 	//多重認識の防止　近傍でマッチ度が極大になる位置を記憶
 	std::vector<std::vector<int>> matches_pos;
 	for (int x = 0; x < matches.cols; x++) {
 		for (int y = 0; y < matches.rows; y++) {
-			if (matches.at<float>(y, x) > threshold && x > lines_info.getLinesLeft() + ignorance_left) {
+			if (matches.at<float>(y, x) > threshold && x > lines_info.getLinesLeft() + ignorance_left && x < lines_info.getLinesRight() - ignorance_right) {
 				std::vector<int> pos = { x, y };
 				if (matches_pos.empty()) {
 					matches_pos.push_back(pos);
@@ -155,31 +157,33 @@ void detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
 			for (int i = 0; i < lines_y.size(); i++) {
 				if (y < lines_y[i]) {
 					if (i == 0) { // 一番上の線より上
-						scale = (lines_y[i] - y) / (interval / 2) * 2;
-						if ((lines_y[i] - y) % (interval / 2) > (interval / 2) / 2.0) {
-							//scale += 2;
+						if ((lines_y[0] - y) < ignorance_y) {
+							scale = (lines_y[i] - y) / (interval / 2) * 2;
+							if ((lines_y[i] - y) % (interval / 2) > (interval / 2) / 2.0) {
+								scale += 2;
+							}
+							scale += NOTE_DO + 20;
+							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
 						}
-						scale += NOTE_DO + 20;
-						drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
 						break;
 					}else if (i % 5 == 0) { //五線同士の間
 						if (y - lines_y[i - 1] < ignorance_y) {
 							scale = (y - lines_y[i - 1]) / (interval / 2) * (-2);
 							if ((y - lines_y[i - 1]) % (interval / 2) > (interval / 2) / 2.0) {
-								//scale -= 2;
+								scale -= 2;
 							}
 							scale += NOTE_MI;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
-							break;
 						}else if (lines_y[i] - y < ignorance_y) {
 							scale = (lines_y[i] - y) / (interval / 2) * 2;
 							if ((lines_y[i] - y) % (interval / 2) > (interval / 2) / 2.0) {
-								//scale += 2;
+								scale += 2;
 							}
+							std::cout << lines_y[0] - y << std::endl;
 							scale += NOTE_DO + 20;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
-							break;
 						}
+						break;
 					}else { //線の間
 						std::vector<int> v = { std::abs(y - lines_y[i]), std::abs(y - (lines_y[i - 1] + lines_y[i]) / 2), std::abs(y - lines_y[i - 1])};
 						scale = (std::min_element(v.begin(), v.end()) - v.begin()) * 2 + (4 - i % 5) * 4 + NOTE_MI;
