@@ -87,8 +87,8 @@ linesInfo detectLines(cv::Mat image, cv::Mat original_image) {
 }
 
 void drawingNotesInfo(cv::Mat original_image, int scale, int x, int y) {
-	int rect_width = 15;
-	int rect_height = 15;
+	int rect_width = 10;
+	int rect_height = 10;
 	int delta_text_pos_y = 30;
 	cv::rectangle(original_image, cv::Point(x, y), cv::Point(x + rect_width, y + rect_height)
 		, cv::Scalar(255, 0, 0), 1);
@@ -103,7 +103,8 @@ void detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
 	int ignorance_left = 30;//五線の左端から右へ何ピクセルまで無視するか
 	int ignorance_y = interval * 2;//五線から上下何ピクセル無視するか
 	cv::Mat ell = cv::Mat::zeros(9, 9, CV_8UC1);
-	cv::ellipse(ell, cv::Point(4, 4), cv::Size(3, 5), 80, 0, 360, 255, -1, CV_AA);
+	cv::Point ell_center = cv::Point(4, 4);
+	cv::ellipse(ell, ell_center, cv::Size(3, 5), 60, 0, 360, 255, -1, CV_AA);
 	cv::imshow("ellipse", ell);
 	
 	cv::Mat matches; 
@@ -141,51 +142,49 @@ void detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
 	std::vector<int> lines_y = lines_info.getLinesY();
 	int scale;
 	for (int i = 0; i < matches_pos.size(); i++) {
-		int x = matches_pos[i][0];
-		int y = matches_pos[i][1];
-		if (matches.at<float>(y, x) > threshold && x > lines_info.getLinesLeft() + ignorance_left) {
-			if (y > lines_y[lines_y.size() - 1]) {//一番下の線より下
-				scale = (y - lines_y[lines_y.size() - 1]) / (interval / 2) * (-2);
-				if ((y - lines_y[lines_y.size() - 1]) % (interval / 2) > (interval / 2) / 2.0) {
-					scale -= 2;
-				}
-				scale += NOTE_MI;
-				drawingNotesInfo(original_image, scale, x, y);
+		int x = matches_pos[i][0] + ell_center.x;
+		int y = matches_pos[i][1] + ell_center.y;
+		if (y > lines_y[lines_y.size() - 1]) {//一番下の線より下
+			scale = (y - lines_y[lines_y.size() - 1]) / (interval / 2) * (-2);
+			if ((y - lines_y[lines_y.size() - 1]) % (interval / 2) > (interval / 2) / 2.0) {
+				scale -= 1;
 			}
-			else {
-				for (int i = 0; i < lines_y.size(); i++) {
-					if (y < lines_y[i]) { // 一番上の線より上
-						if (i == 0) {
+			scale += NOTE_MI;
+			drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
+		}else{
+			for (int i = 0; i < lines_y.size(); i++) {
+				if (y < lines_y[i]) {
+					if (i == 0) { // 一番上の線より上
+						scale = (lines_y[i] - y) / (interval / 2) * 2;
+						if ((lines_y[i] - y) % (interval / 2) > (interval / 2) / 2.0) {
+							//scale += 2;
+						}
+						scale += NOTE_DO + 20;
+						drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
+						break;
+					}else if (i % 5 == 0) { //五線同士の間
+						if (y - lines_y[i - 1] < ignorance_y) {
+							scale = (y - lines_y[i - 1]) / (interval / 2) * (-2);
+							if ((y - lines_y[i - 1]) % (interval / 2) > (interval / 2) / 2.0) {
+								//scale -= 2;
+							}
+							scale += NOTE_MI;
+							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
+							break;
+						}else if (lines_y[i] - y < ignorance_y) {
 							scale = (lines_y[i] - y) / (interval / 2) * 2;
 							if ((lines_y[i] - y) % (interval / 2) > (interval / 2) / 2.0) {
-								scale += 2;
+								//scale += 2;
 							}
 							scale += NOTE_DO + 20;
-							drawingNotesInfo(original_image, scale, x, y);
+							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
+							break;
 						}
-						else if (i % 5 == 0) { //五線同士の間
-							if (y - lines_y[i - 1] < ignorance_y) {
-								scale = (y - lines_y[i - 1]) / (interval / 2) * (-2);
-								if ((y - lines_y[i - 1]) % (interval / 2) > (interval / 2) / 2.0) {
-									scale -= 2;
-								}
-								scale += NOTE_MI;
-								drawingNotesInfo(original_image, scale, x, y);
-							}
-							else if (lines_y[i] - y < ignorance_y) {
-								scale = (lines_y[i] - y) / (interval / 2) * 2;
-								if ((lines_y[i] - y) % (interval / 2) > (interval / 2) / 2.0) {
-									scale += 2;
-								}
-								scale += NOTE_DO + 20;
-								drawingNotesInfo(original_image, scale, x, y);
-							}
-						}
-						else { //線の間
-							std::vector<int> v = { y - lines_y[i], y - (lines_y[i - 1] + lines_y[i]) / 2, y - lines_y[i - 1] };
-							scale = (std::min_element(v.begin(), v.end()) - v.begin()) * 2 + (4 - i % 5) * 4 + NOTE_MI;
-							drawingNotesInfo(original_image, scale, x, y);
-						}
+					}else { //線の間
+						std::vector<int> v = { std::abs(y - lines_y[i]), std::abs(y - (lines_y[i - 1] + lines_y[i]) / 2), std::abs(y - lines_y[i - 1])};
+						scale = (std::min_element(v.begin(), v.end()) - v.begin()) * 2 + (4 - i % 5) * 4 + NOTE_MI;
+						drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
+						break;
 					}
 				}
 			}
@@ -200,7 +199,8 @@ int main(int argc, char* argv[])
 
 	//コード認識
 	STRING text_out;
-	tess.ProcessPages("C:/Users/MEIP-users/Documents/flog.png", NULL, 0, &text_out);
+	char* data = "C:/Users/MEIP-users/Documents/flog.png";
+	tess.ProcessPages(data, NULL, 0, &text_out);
 	tesseract::ResultIterator* ri = tess.GetIterator();
 	tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
 	
@@ -226,7 +226,7 @@ int main(int argc, char* argv[])
 	
 
 	//opencvによる楽譜認識
-	cv::Mat score = cv::imread("C:/Users/MEIP-users/Documents/flog.png");
+	cv::Mat score = cv::imread(data);
 	cv::imshow("score", score);
 	cv::Mat gray_score;
 	cv::Mat binarized;
