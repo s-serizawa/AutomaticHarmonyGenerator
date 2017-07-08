@@ -55,3 +55,29 @@ std::string detectedText::getText() {
 	return detectedText::text;
 }
 
+//読み込んだ五線のクラス
+class linesInfo {
+private:
+	std::vector<int> lines_y;//五線の高さ
+	int lines_left;//五線の左端
+	int lines_right;//五線の右端
+public:
+	linesInfo(std::vector<int> y, int left, int right);
+	std::vector<int> getLinesY();
+	int getLinesLeft();
+	int getLinesRight();
+};
+
+linesInfo::linesInfo(std::vector<int> y, int left, int right) {
+	linesInfo::lines_y = y;
+	linesInfo::lines_left = left;
+	linesInfo::lines_right = right;
+}
+
+int linesInfo::getLinesLeft() {
+	return linesInfo::lines_left;
+}
+
+int linesInfo::getLinesRight() {
+	return linesInfo::lines_right;
+}

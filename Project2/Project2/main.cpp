@@ -38,7 +38,7 @@ std::string UTF8toSJIS(const char* src) {
 	return strSJis;
 }
 
-void detectLines(cv::Mat image, cv::Mat original_image) {
+linesInfo detectLines(cv::Mat image, cv::Mat original_image) {
 	std::vector<cv::Vec4i> lines;
 	cv::HoughLinesP(image, lines, 4, CV_PI / 180.0 * 90, 1000, 400, 10);
 		
@@ -49,7 +49,27 @@ void detectLines(cv::Mat image, cv::Mat original_image) {
 			cv::line(original_image, cv::Point(pt[0], pt[1]), cv::Point(pt[2], pt[3]), cv::Scalar(0, 255, 0), 1);
 			std::cout << "(" << pt[0] << "," << pt[1] << ")-(" << pt[2] << "," << pt[3] << ")" << std::endl;
 		}
+	}else {
+		std::cout << "line not detected" << std::endl;
+		cv::waitKey();
 	}
+
+	//とりあえず誤認識なしとする
+	int steps_num = lines.size() / 5;
+	std::cout << "steps:" << steps_num << std::endl;
+	std::vector<int> lines_y(lines.size(),0);
+	int lines_left = 0;
+	int lines_right = 0;
+	for (int i = 0; i < lines.size(); i++) {
+		lines_y[i] = (lines[i][1] + lines[i][3]) / 2;
+		lines_left += lines[i][0];
+		lines_right += lines[i][2];
+	}
+	lines_left /= lines.size();
+	lines_right /= lines.size();
+	std::sort(lines_y.begin(), lines_y.end());
+	std::cout << "left: "<< lines_left << " right:"  << lines_right << std::endl;
+	return linesInfo::linesInfo(lines_y, lines_left, lines_right);
 }
 
 void detectNotes(cv::Mat image, cv::Mat original_image) {
@@ -60,7 +80,7 @@ void detectNotes(cv::Mat image, cv::Mat original_image) {
 	cv::imshow("ellipse", ell);
 	cv::Mat matches; 
 	cv::matchTemplate(image, ell, matches, CV_TM_CCORR_NORMED);
-	float threshold = 0.73f;
+	float threshold = 0.815f;
 	for (int y = 0; y < matches.rows; y++) {
 		for (int x = 0; x < matches.cols; x++){
 			if(matches.at<float>(y,x) > threshold){
@@ -77,7 +97,7 @@ int main(int argc, char* argv[])
 
 	//コード認識
 	STRING text_out;
-	tess.ProcessPages("C:/Users/MEIP-users/Documents/score_3.png", NULL, 0, &text_out);
+	tess.ProcessPages("C:/Users/MEIP-users/Documents/flog.png", NULL, 0, &text_out);
 	tesseract::ResultIterator* ri = tess.GetIterator();
 	tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
 	
@@ -92,7 +112,7 @@ int main(int argc, char* argv[])
 
 			int x1, y1, x2, y2;//x:横軸(右ほど大) y:縦軸(下ほど大)　
 			ri->BoundingBox(level, &x1, &y1, &x2, &y2);
-			if (ri->Confidence(level) > 70.0f) {
+			if (ri->Confidence(level) > 7.0f) {
 				detectedText code(x1, y1, x2, y2, ri->Confidence(level), UTF8toSJIS(word));
 				printf("(%d, %d)-(%d, %d) : %.1f%% : %s \n", code.getX1(), code.getY1(), code.getX2(), code.getY2(), code.getConf(), code.getText().c_str());
 				dictionary.push_back(code);
@@ -103,7 +123,7 @@ int main(int argc, char* argv[])
 	
 
 	//opencvによる楽譜認識
-	cv::Mat score = cv::imread("C:/Users/MEIP-users/Documents/score_3.png");
+	cv::Mat score = cv::imread("C:/Users/MEIP-users/Documents/flog.png");
 	cv::imshow("score", score);
 	cv::Mat gray_score;
 	cv::Mat binarized;
@@ -113,7 +133,7 @@ int main(int argc, char* argv[])
 	cv::imshow("binarized", binarized);
 
 	//五線の認識
-	detectLines(binarized,score);
+	linesInfo lines_info = detectLines(binarized,score);
 	cv::imshow("score", score);
 	
 	//符頭の認識
