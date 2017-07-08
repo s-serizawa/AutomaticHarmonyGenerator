@@ -125,9 +125,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="harmony_generator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MusicalScale.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="notes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

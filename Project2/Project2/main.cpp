@@ -5,7 +5,7 @@
 #include <string>
 #include <iostream>
 #include "main.h"
-
+#include "Musicalscale.h"
 
 #ifdef _DEBUG
 #pragma comment(lib, "libtesseract302d.lib")
@@ -52,15 +52,17 @@ void detectLines(cv::Mat image, cv::Mat original_image) {
 	}
 }
 
-void detectNotes(cv::Mat image, cv::Mat original_image) {
-	int template_width = 15;
-	int template_height = 15;
-	cv::Mat ell = cv::Mat::zeros(9, 9, CV_8UC1);
-	cv::ellipse(ell, cv::Point(4, 4), cv::Size(3, 5), 80, 0, 360, 255, -1, CV_AA);
-	cv::imshow("ellipse", ell);
+void detectNotes(cv::Mat image, cv::Mat original_image, float threshold) {
+	int template_width = 15;   //---- 描画用
+	int template_height = 15; //---- 描画用
+	//cv::Mat ell = cv::Mat::zeros(9, 9, CV_8UC1);
+	//cv::ellipse(ell, cv::Point(4, 4), cv::Size(3, 5), 80, 0, 360, 255, -1, CV_AA); //---- 楕円
+	cv::Mat ell = cv::imread("C:/Users/MEIP-users/Documents/note.png");
+	//cv::imshow("ellipse", ell);
+	cv::Mat gray_ell;
+	cv::cvtColor(ell, gray_ell, CV_BGR2GRAY);//一応グレースケールに
 	cv::Mat matches; 
-	cv::matchTemplate(image, ell, matches, CV_TM_CCORR_NORMED);
-	float threshold = 0.73f;
+	cv::matchTemplate(image, gray_ell, matches, CV_TM_CCORR_NORMED);
 	for (int y = 0; y < matches.rows; y++) {
 		for (int x = 0; x < matches.cols; x++){
 			if(matches.at<float>(y,x) > threshold){
@@ -100,26 +102,66 @@ int main(int argc, char* argv[])
 		} while (ri->Next(level));
 	}
 
-	
-
 	//opencvによる楽譜認識
 	cv::Mat score = cv::imread("C:/Users/MEIP-users/Documents/score_3.png");
 	cv::imshow("score", score);
 	cv::Mat gray_score;
 	cv::Mat binarized;
-	cv::cvtColor(score, gray_score, CV_BGR2GRAY);//一応グレースケールに
+	cv::cvtColor(score, gray_score, CV_BGR2GRAY);//y一応グレースケールに
 	cv::imshow("gray_score", gray_score);
 	cv::threshold(gray_score, binarized,224, 255, cv::THRESH_BINARY_INV);
 	cv::imshow("binarized", binarized);
+
+	cv::Mat original_score = score.clone();
 
 	//五線の認識
 	detectLines(binarized,score);
 	cv::imshow("score", score);
 	
 	//符頭の認識
-	detectNotes(binarized, score);
+	float threshold = 0.68f;
+	detectNotes(binarized, score, threshold);
 	cv::imshow("score", score);
+
+	////---- thresholdの値調整 (for debug)
+	//std::cout << "press r to retry detection" << std::endl;
+	//std::cout << "press any key(except r) to quit" << std::endl;
+	//int key = cv::waitKey();
+	//if (key == 'r') {
+	//	while (true)
+	//	{
+	//		std::cout << "a(+)" << std::endl;
+	//		std::cout << "z(-)" << std::endl;
+	//		while (true) {
+	//			int tmp = cv::waitKey();
+	//			if (tmp == 'a') { threshold += 0.001; std::cout << "threshold: " << threshold << std::endl; }
+	//			else if (tmp == 'z') { threshold -= 0.001; std::cout << "threshold: " << threshold << std::endl; }
+	//			else if (tmp == 'q') { std::cout << "threshold adjusting end" << std::endl; break; }
+	//		}
+
+	//		cv::destroyAllWindows();
+	//		cv::Mat result_score = original_score.clone();
+	//		detectNotes(binarized, result_score, threshold);
+	//		cv::imshow("result_score", result_score);
+
+	//		std::cout << "press q to quit" << std::endl;
+	//		std::cout << "otherwise retry detection" << std::endl;
+	//		int tmp2 = cv::waitKey();
+	//		if (tmp2 == 'q') { break; }
+	//	}
+	//}
+
+	//---- テスト
+	MusicalScale scale_tmp;
+	scale_tmp.setScaleAccordingToChord(dictionary[0].getText());
+	std::cout << scale_tmp.get_tonic() << std::endl;
+	std::cout << scale_tmp.get_supertonic() << std::endl;
+	std::cout << scale_tmp.get_mediant() << std::endl;
+	std::cout << scale_tmp.get_subdominant() << std::endl;
+	std::cout << scale_tmp.get_dominant() << std::endl;
+	std::cout << scale_tmp.get_submediant() << std::endl;
+	std::cout << scale_tmp.get_leadingtone() << std::endl;
 	
-	cv::waitKey();
+	getchar();
 	return 0;
 }
