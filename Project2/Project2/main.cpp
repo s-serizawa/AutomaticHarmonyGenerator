@@ -49,7 +49,7 @@ std::string UTF8toSJIS(const char* src) {
 
 linesInfo detectLines(cv::Mat image, cv::Mat original_image) {
 	std::vector<cv::Vec4i> lines;
-	cv::HoughLinesP(image, lines, 4, CV_PI / 180.0 * 90, 1000, 400, 10);
+	cv::HoughLinesP(image, lines, 4, CV_PI / 180.0, 1000, 400, 10);
 		
 	//Draw detected segments on the original image.
 	if(!lines.empty()){
@@ -105,7 +105,7 @@ std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesIn
 	int ignorance_y = interval * 3;//五線から上下何ピクセル無視するか
 	cv::Mat ell = cv::Mat::zeros(9, 9, CV_8UC1);
 	cv::Point ell_center = cv::Point(4, 4);
-	cv::ellipse(ell, ell_center, cv::Size(3, 5), 60, 0, 360, 255, -1, CV_AA);
+	cv::ellipse(ell, ell_center, cv::Size(3, 4), 60, 0, 360, 255, -1, CV_AA);
 	//cv::ellipse(ell, ell_center, cv::Size(3, 5), 55, 0, 360, 255, 2, 8);// CV_AA);
 	cv::imshow("ellipse", ell);
 	
@@ -230,16 +230,16 @@ void drawNoteFromScale(cv::Mat original_image, int x, int y, int scale, int step
 	int mi_y = +lines_info.getLinesY()[step * 5 + 4];
 	//符頭を描く位置は直接指定
 	if (note_type == 4) {
-		cv::ellipse(original_image, cv::Point(x,y), cv::Size(3, 5), 60, 0, 360, cv::Scalar(0,0,0), -1, CV_AA);
+		cv::ellipse(original_image, cv::Point(x,y), cv::Size(3, 4), 60, 0, 360, cv::Scalar(0,0,0), -1, CV_AA);
 	}else if (note_type == 2) {
-		cv::ellipse(original_image, cv::Point(x,y), cv::Size(3, 5), 55, 0, 360, cv::Scalar(0,0,0), 2, 8);
+		cv::ellipse(original_image, cv::Point(x,y), cv::Size(3, 4), 60, 0, 360, cv::Scalar(0,0,0), 2, 8);
 	}else {
 		return;
 	}
 
 	//補助線はscale見て決める
 	//とりあえず下二本まで
-	int hojo_l = 12;
+	int hojo_l = 16;
 	if (scale < NOTE_RE) {//面倒なのでめっちゃ高音を考えない
 		cv::line(original_image, cv::Point(x - hojo_l / 2, mi_y + interval), cv::Point(x + hojo_l / 2, mi_y + interval), cv::Scalar(0, 0, 0), 1, CV_AA);
 		if (scale < NOTE_SI_L) {
@@ -291,8 +291,8 @@ int main(int argc, char* argv[])
 	cv::Mat binarized;
 	cv::cvtColor(score, gray_score, CV_BGR2GRAY);//一応グレースケールに
 	//cv::imshow("gray_score", gray_score);
-	cv::threshold(gray_score, binarized,224, 255, cv::THRESH_BINARY_INV);
-	//cv::imshow("binarized", binarized);
+	cv::threshold(gray_score, binarized, 240, 255, cv::THRESH_BINARY_INV);
+	cv::imshow("binarized", binarized);
 
 	//五線の認識
 	linesInfo lines_info = detectLines(binarized,score);
