@@ -39,5 +39,4 @@
 *.ilk
 Project2/.vs/Project2/v14/.suo
 Project2/Project2.VC.VC.opendb
-Project2/Project2.VC.db
-Project2/Project2.VC.db
+*.db
