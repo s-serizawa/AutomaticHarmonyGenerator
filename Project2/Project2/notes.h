@@ -1,5 +1,6 @@
 #pragma once
 
+#define NOTE_SI_L 46
 #define NOTE_DO 48
 #define NOTE_RE 50
 #define NOTE_MI 52

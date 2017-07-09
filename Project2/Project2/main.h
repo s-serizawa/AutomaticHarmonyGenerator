@@ -62,19 +62,22 @@ private:
 	int lines_left;//五線の左端
 	int lines_right;//五線の右端
 	int lines_interval;//五線の線同士の間隔
+	int  steps_num;//五線が何段あるか
 public:
-	linesInfo(std::vector<int> y, int left, int right, int interval);
+	linesInfo(std::vector<int> y, int left, int right, int interval, int steps_num);
 	std::vector<int> getLinesY();
 	int getLinesLeft();
 	int getLinesRight();
 	int getLinesInterval();
+	int getStepsNum();
 };
 
-linesInfo::linesInfo(std::vector<int> y, int left, int right, int interval) {
+linesInfo::linesInfo(std::vector<int> y, int left, int right, int interval, int steps_num) {
 	linesInfo::lines_y = y;
 	linesInfo::lines_left = left;
 	linesInfo::lines_right = right;
 	linesInfo::lines_interval = interval;
+	linesInfo::steps_num = steps_num;
 }
 
 std::vector<int> linesInfo::getLinesY(){
@@ -91,4 +94,45 @@ int linesInfo::getLinesRight() {
 
 int linesInfo::getLinesInterval() {
 	return linesInfo::lines_interval;
+}
+
+int linesInfo::getStepsNum() {
+	return linesInfo::steps_num;
+}
+
+class noteInfo {
+private:
+	int pos_x;
+	int pos_y;
+	int scale;
+	int step;//何段目の五線か 最初の五線を0とする
+public:
+	noteInfo(int x, int y, int sc, int st);
+	int getPosX();
+	int getPosY();
+	int getScale();
+	int getStep();
+};
+
+noteInfo::noteInfo(int x, int y, int sc, int st) {
+	noteInfo::pos_x = x;
+	noteInfo::pos_y = y;
+	noteInfo::scale = sc;
+	noteInfo::step = st;
+}
+
+int noteInfo::getPosX(){
+	return pos_x;
+}
+
+int noteInfo::getPosY(){
+	return pos_y;
+}
+
+int noteInfo::getScale(){
+	return scale;
+}
+
+int noteInfo::getStep() {
+	return step;
 }

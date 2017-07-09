@@ -83,22 +83,22 @@ linesInfo detectLines(cv::Mat image, cv::Mat original_image) {
 	}
 	lines_interval /= steps_num;
 	std::cout << "left: "<< lines_left << " right:"  << lines_right << " interval:" << lines_interval <<std::endl;
-	return linesInfo::linesInfo(lines_y, lines_left, lines_right,lines_interval);
+	return linesInfo::linesInfo(lines_y, lines_left, lines_right,lines_interval,steps_num);
 }
 
 void drawingNotesInfo(cv::Mat original_image, int scale, int x, int y) {
 	int rect_width = 10;
 	int rect_height = 10;
 	int delta_text_pos_y = 30;
-	cv::rectangle(original_image, cv::Point(x, y), cv::Point(x + rect_width, y + rect_height)
-		, cv::Scalar(255, 0, 0), 1);
+	/*cv::rectangle(original_image, cv::Point(x, y), cv::Point(x + rect_width, y + rect_height)
+		, cv::Scalar(0, 0, 0), 1);
 	char buffer[3];
 	itoa(scale, buffer, 10);
 	cv::putText(original_image, buffer, cv::Point(x, y + delta_text_pos_y), 
-		cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1, CV_AA);
+		cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1, CV_AA);*/
 }
 
-void detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
+std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
 	int interval = lines_info.getLinesInterval();
 	int ignorance_left = 34;//五線の左端から右へ何ピクセルまで無視するか
 	int ignorance_right = 10;//五線の右端から左へ何ピクセルまで無視するか
@@ -142,7 +142,9 @@ void detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
 	std::cout << matches_pos.size() << std::endl;
 
 	std::vector<int> lines_y = lines_info.getLinesY();
+	std::vector<noteInfo> notes_info;
 	int scale;
+	int step;
 	//半音上下はなし
 	for (int i = 0; i < matches_pos.size(); i++) {
 		int x = matches_pos[i][0] + ell_center.x;
@@ -153,7 +155,9 @@ void detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
 				scale -= 2;
 			}
 			scale += NOTE_MI;
+			step = lines_info.getStepsNum() - 1;
 			drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
+			notes_info.push_back(noteInfo(x,y, scale, step));
 		}else{
 			for (int i = 0; i < lines_y.size(); i++) {
 				if (y < lines_y[i]) {
@@ -164,38 +168,88 @@ void detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
 								scale += 2;
 							}
 							scale += NOTE_DO + 20;
+							step = 0;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
+							notes_info.push_back(noteInfo(x, y, scale,step));
 						}
 						break;
 					}else if (i % 5 == 0) { //五線同士の間
-						if (y - lines_y[i - 1] < ignorance_y) {
+						if (y - lines_y[i - 1] < ignorance_y) {//上の五線に属する
 							scale = (y - lines_y[i - 1]) / (interval / 2) * (-2);
 							if ((y - lines_y[i - 1]) % (interval / 2) > (interval / 2) / 2.0) {
 								scale -= 2;
 							}
 							scale += NOTE_MI;
+							step = i / 5 - 1;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
-						}else if (lines_y[i] - y < ignorance_y) {
+							notes_info.push_back(noteInfo(x, y, scale,step ));
+						}else if (lines_y[i] - y < ignorance_y) {//下の五線に属する
 							scale = (lines_y[i] - y) / (interval / 2) * 2;
 							if ((lines_y[i] - y) % (interval / 2) > (interval / 2) / 2.0) {
 								scale += 2;
 							}
 							std::cout << lines_y[0] - y << std::endl;
 							scale += NOTE_DO + 20;
+							step = i / 5;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
+							notes_info.push_back(noteInfo(x, y, scale, step));
 						}
 						break;
 					}else { //線の間
 						std::vector<int> v = { std::abs(y - lines_y[i]), std::abs(y - (lines_y[i - 1] + lines_y[i]) / 2), std::abs(y - lines_y[i - 1])};
 						scale = (std::min_element(v.begin(), v.end()) - v.begin()) * 2 + (4 - i % 5) * 4 + NOTE_MI;
 						drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
+						step = i / 5;
+						notes_info.push_back(noteInfo(x, y, scale, step));
 						break;
 					}
 				}
 			}
 		}
 	}
+	return notes_info;
 }
+
+/*
+void drawNote(cv::Point pos, int note_type){//描く位置を直接指定 補助線は書かない
+	if (note_type == 4) {
+
+	}
+	else if (note_type == 2) {
+
+	}
+	else {
+		return;
+	}
+}
+*/
+
+void drawNoteFromScale(cv::Mat original_image, int x, int y, int scale, int step, linesInfo lines_info, int note_type) {
+	int interval = lines_info.getLinesInterval();
+	//int y_from_scale = (NOTE_MI -scale) * (interval / 2) + lines_info.getLinesY()[step * 5 + 4];
+	int mi_y = +lines_info.getLinesY()[step * 5 + 4];
+	//符頭を描く位置は直接指定
+	if (note_type == 4) {
+		cv::ellipse(original_image, cv::Point(x,y), cv::Size(3, 5), 60, 0, 360, cv::Scalar(0,0,0), -1, CV_AA);
+	}else if (note_type == 2) {
+		cv::ellipse(original_image, cv::Point(x,y), cv::Size(3, 5), 55, 0, 360, cv::Scalar(0,0,0), 2, 8);
+	}else {
+		return;
+	}
+
+	//補助線はscale見て決める
+	//とりあえず下二本まで
+	int hojo_l = 12;
+	if (scale < NOTE_RE) {//面倒なのでめっちゃ高音を考えない
+		cv::line(original_image, cv::Point(x - hojo_l / 2, mi_y + interval), cv::Point(x + hojo_l / 2, mi_y + interval), cv::Scalar(0, 0, 0), 1, CV_AA);
+		if (scale < NOTE_SI_L) {
+			cv::line(original_image, cv::Point(x - hojo_l / 2, mi_y + interval* 2), cv::Point(x + hojo_l / 2, mi_y + interval * 2), cv::Scalar(0, 0, 0), 1, CV_AA);
+		}
+	
+	}
+
+}
+
 
 int main(int argc, char* argv[])
 {	
@@ -232,7 +286,7 @@ int main(int argc, char* argv[])
 
 	//opencvによる楽譜認識
 	cv::Mat score = cv::imread(data);
-	cv::imshow("score", score);
+	//cv::imshow("score", score);
 	cv::Mat gray_score;
 	cv::Mat binarized;
 	cv::cvtColor(score, gray_score, CV_BGR2GRAY);//一応グレースケールに
@@ -242,12 +296,20 @@ int main(int argc, char* argv[])
 
 	//五線の認識
 	linesInfo lines_info = detectLines(binarized,score);
-	cv::imshow("score", score);
+	//cv::imshow("score", score);
 	
 	//符頭の認識
-	detectNotes(binarized, score,lines_info);
+	std::vector<noteInfo> notes_info = detectNotes(binarized, score,lines_info);
+	//cv::imshow("score", score);
+
+	//ハモリ生成
+	for (int i = 0; i < notes_info.size(); i++) {
+		int scale_change = -4;
+		drawNoteFromScale(score, notes_info[i].getPosX(), notes_info[i].getPosY() - scale_change * lines_info.getLinesInterval() / 4, 
+			notes_info[i].getScale() + scale_change, notes_info[i].getStep(), lines_info, 4);
+	}
 	cv::imshow("score", score);
-	
+
 	cv::waitKey();
 	return 0;
 }
