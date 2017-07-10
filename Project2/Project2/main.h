@@ -111,6 +111,12 @@ int linesInfo::getStepsNum() {
 	return linesInfo::steps_num;
 }
 
+enum NoteType
+{
+	QUARTER = 0,
+	HALF = 1,
+};
+
 class noteInfo {
 private:
 	int pos_x;
@@ -119,8 +125,9 @@ private:
 	int step;//何段目の五線か 最初の五線を0とする
 	std::string chordname = ""; //---- その音符の乗ってるコードネーム
 	std::vector<int> scalenotes; //---- そのコードネームに対応するスケール
+	NoteType note_type;
 public:
-	noteInfo(int x, int y, int sc, int st);
+	noteInfo(int x, int y, int sc, int st, NoteType nt);
 	int getPosX();
 	int getPosY();
 	int getScale();
@@ -129,13 +136,16 @@ public:
 	std::vector<int> getScalenotes();
 	void setChordname(std::string _chord_name);
 	void setScalenotes(std::vector<int> _scale_notes);
+	NoteType getNoteType();
+
 };
 
-noteInfo::noteInfo(int x, int y, int sc, int st) {
+noteInfo::noteInfo(int x, int y, int sc, int st, NoteType nt) {
 	noteInfo::pos_x = x;
 	noteInfo::pos_y = y;
 	noteInfo::scale = sc;
 	noteInfo::step = st;
+	noteInfo::note_type = nt;
 }
 
 int noteInfo::getPosX(){
@@ -168,4 +178,7 @@ void noteInfo::setChordname(std::string _chord_name) {
 
 void noteInfo::setScalenotes(std::vector<int> _scale_notes) {
 	this->scalenotes = _scale_notes;
+
+	NoteType noteInfo::getNoteType() {
+	return note_type;
 }
