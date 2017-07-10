@@ -100,25 +100,34 @@ int linesInfo::getStepsNum() {
 	return linesInfo::steps_num;
 }
 
+enum NoteType
+{
+	QUARTER = 0,
+	HALF = 1,
+};
+
 class noteInfo {
 private:
 	int pos_x;
 	int pos_y;
 	int scale;
 	int step;//âΩíiñ⁄ÇÃå‹ê¸Ç© ç≈èâÇÃå‹ê¸Ç0Ç∆Ç∑ÇÈ
+	NoteType note_type;
 public:
-	noteInfo(int x, int y, int sc, int st);
+	noteInfo(int x, int y, int sc, int st, NoteType nt);
 	int getPosX();
 	int getPosY();
 	int getScale();
 	int getStep();
+	NoteType getNoteType();
 };
 
-noteInfo::noteInfo(int x, int y, int sc, int st) {
+noteInfo::noteInfo(int x, int y, int sc, int st, NoteType nt) {
 	noteInfo::pos_x = x;
 	noteInfo::pos_y = y;
 	noteInfo::scale = sc;
 	noteInfo::step = st;
+	noteInfo::note_type = nt;
 }
 
 int noteInfo::getPosX(){
@@ -135,4 +144,8 @@ int noteInfo::getScale(){
 
 int noteInfo::getStep() {
 	return step;
+}
+
+NoteType noteInfo::getNoteType() {
+	return note_type;
 }

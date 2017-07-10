@@ -49,7 +49,8 @@ std::string UTF8toSJIS(const char* src) {
 
 linesInfo detectLines(cv::Mat image, cv::Mat original_image) {
 	std::vector<cv::Vec4i> lines;
-	cv::HoughLinesP(image, lines, 4, CV_PI / 180.0, 1000, 400, 10);
+	//std::cout<< "image_size:" << original_image.cols << std::endl;
+	cv::HoughLinesP(image, lines, 4, CV_PI / 180.0 * 90, original_image.cols * 19 / 18, 40 * original_image.cols / 77, 10);
 		
 	//Draw detected segments on the original image.
 	if(!lines.empty()){
@@ -64,6 +65,8 @@ linesInfo detectLines(cv::Mat image, cv::Mat original_image) {
 	}
 
 	//‚Æ‚è‚ ‚¦‚¸Œë”F¯‚È‚µ‚Æ‚·‚é
+	
+
 	int steps_num = lines.size() / 5;
 	std::cout << "steps:" << steps_num << std::endl;
 	std::vector<int> lines_y(lines.size(),0);
@@ -98,23 +101,20 @@ void drawingNotesInfo(cv::Mat original_image, int scale, int x, int y) {
 		cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1, CV_AA);*/
 }
 
-std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
+
+std::vector<noteInfo> matchToPatern(cv::Mat original_image, cv::Mat image, std::vector<noteInfo>& notes_info, cv::Mat pattern, linesInfo lines_info, float threshold, NoteType note_type) {
+	
 	int interval = lines_info.getLinesInterval();
-	int ignorance_left = 34;//ŒÜü‚Ì¶’[‚©‚ç‰E‚Ö‰½ƒsƒNƒZƒ‹‚Ü‚Å–³‹‚·‚é‚©
-	int ignorance_right = 10;//ŒÜü‚Ì‰E’[‚©‚ç¶‚Ö‰½ƒsƒNƒZƒ‹‚Ü‚Å–³‹‚·‚é‚©
+	//interval‚©‚çŠy•ˆ‚Ì‘å‚«‚³‚É‡‚í‚¹‚Äƒpƒ‰ƒ[ƒ^‚¢‚¶‚é
+	int ignorance_left = interval * 5;//ŒÜü‚Ì¶’[‚©‚ç‰E‚Ö‰½ƒsƒNƒZƒ‹‚Ü‚Å–³‹‚·‚é‚©
+	int ignorance_right = interval * 2;//ŒÜü‚Ì‰E’[‚©‚ç¶‚Ö‰½ƒsƒNƒZƒ‹‚Ü‚Å–³‹‚·‚é‚©
 	int ignorance_y = interval * 3;//ŒÜü‚©‚çã‰º‰½ƒsƒNƒZƒ‹–³‹‚·‚é‚©
-	cv::Mat ell = cv::Mat::zeros(9, 9, CV_8UC1);
-	cv::Point ell_center = cv::Point(4, 4);
-	cv::ellipse(ell, ell_center, cv::Size(3, 4), 60, 0, 360, 255, -1, CV_AA);
-	//cv::ellipse(ell, ell_center, cv::Size(3, 5), 55, 0, 360, 255, 2, 8);// CV_AA);
-	cv::imshow("ellipse", ell);
+	cv::Point ell_center = cv::Point(interval * 3 / 4, interval * 3 / 4);
 	
-	cv::Mat matches; 
-	cv::matchTemplate(image, ell, matches, CV_TM_CCORR_NORMED);
+	cv::Mat matches;
+	cv::matchTemplate(image, pattern, matches, CV_TM_CCORR_NORMED);
 	
-	//‰¹ŠK‚Ì”F¯
-	float threshold = 0.7f;
-	
+
 	//‘½d”F¯‚Ì–h~@‹ß–T‚Åƒ}ƒbƒ`“x‚ª‹É‘å‚É‚È‚éˆÊ’u‚ğ‹L‰¯
 	std::vector<std::vector<int>> matches_pos;
 	for (int x = 0; x < matches.cols; x++) {
@@ -142,9 +142,10 @@ std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesIn
 	std::cout << matches_pos.size() << std::endl;
 
 	std::vector<int> lines_y = lines_info.getLinesY();
-	std::vector<noteInfo> notes_info;
+	
 	int scale;
 	int step;
+
 	//”¼‰¹ã‰º‚Í‚È‚µ
 	for (int i = 0; i < matches_pos.size(); i++) {
 		int x = matches_pos[i][0] + ell_center.x;
@@ -157,8 +158,9 @@ std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesIn
 			scale += NOTE_MI;
 			step = lines_info.getStepsNum() - 1;
 			drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
-			notes_info.push_back(noteInfo(x,y, scale, step));
-		}else{
+			notes_info.push_back(noteInfo(x, y, scale, step, note_type));
+		}
+		else {
 			for (int i = 0; i < lines_y.size(); i++) {
 				if (y < lines_y[i]) {
 					if (i == 0) { // ˆê”Ôã‚Ìü‚æ‚èã
@@ -170,10 +172,11 @@ std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesIn
 							scale += NOTE_DO + 20;
 							step = 0;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
-							notes_info.push_back(noteInfo(x, y, scale,step));
+							notes_info.push_back(noteInfo(x, y, scale, step, note_type));
 						}
 						break;
-					}else if (i % 5 == 0) { //ŒÜü“¯m‚ÌŠÔ
+					}
+					else if (i % 5 == 0) { //ŒÜü“¯m‚ÌŠÔ
 						if (y - lines_y[i - 1] < ignorance_y) {//ã‚ÌŒÜü‚É‘®‚·‚é
 							scale = (y - lines_y[i - 1]) / (interval / 2) * (-2);
 							if ((y - lines_y[i - 1]) % (interval / 2) > (interval / 2) / 2.0) {
@@ -182,31 +185,57 @@ std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesIn
 							scale += NOTE_MI;
 							step = i / 5 - 1;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
-							notes_info.push_back(noteInfo(x, y, scale,step ));
-						}else if (lines_y[i] - y < ignorance_y) {//‰º‚ÌŒÜü‚É‘®‚·‚é
+							notes_info.push_back(noteInfo(x, y, scale, step, note_type));
+						}
+						else if (lines_y[i] - y < ignorance_y) {//‰º‚ÌŒÜü‚É‘®‚·‚é
 							scale = (lines_y[i] - y) / (interval / 2) * 2;
-							if ((lines_y[i] - y) % (interval / 2) > (interval / 2) / 2.0) {
+							if ((lines_y[i] - y) % (interval / 2) >(interval / 2) / 2.0) {
 								scale += 2;
 							}
 							std::cout << lines_y[0] - y << std::endl;
 							scale += NOTE_DO + 20;
 							step = i / 5;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
-							notes_info.push_back(noteInfo(x, y, scale, step));
+							notes_info.push_back(noteInfo(x, y, scale, step, note_type));
 						}
 						break;
-					}else { //ü‚ÌŠÔ
-						std::vector<int> v = { std::abs(y - lines_y[i]), std::abs(y - (lines_y[i - 1] + lines_y[i]) / 2), std::abs(y - lines_y[i - 1])};
+					}
+					else { //ü‚ÌŠÔ
+						std::vector<int> v = { std::abs(y - lines_y[i]), std::abs(y - (lines_y[i - 1] + lines_y[i]) / 2), std::abs(y - lines_y[i - 1]) };
 						scale = (std::min_element(v.begin(), v.end()) - v.begin()) * 2 + (4 - i % 5) * 4 + NOTE_MI;
 						drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
 						step = i / 5;
-						notes_info.push_back(noteInfo(x, y, scale, step));
+						notes_info.push_back(noteInfo(x, y, scale, step, note_type));
 						break;
 					}
 				}
 			}
 		}
 	}
+	return notes_info;
+}
+
+std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
+	int interval = lines_info.getLinesInterval();
+	
+	//‚Æ‚è‚ ‚¦‚¸4•ª‚Æ2•ª‚Ì‚İ
+	cv::Mat ell_q = cv::Mat::zeros(interval * 3 / 2, interval * 3 / 2, CV_8UC1);
+	cv::Mat ell_h = cv::Mat::zeros(interval * 3 / 2, interval * 3 / 2, CV_8UC1);
+	cv::Point ell_center = cv::Point(interval * 3 / 4, interval * 3 / 4);
+	cv::ellipse(ell_q, ell_center, cv::Size(interval / 2, interval * 2 / 3), 60, 0, 360, 255, -1, CV_AA);
+	cv::ellipse(ell_h, ell_center, cv::Size(interval * 2 / 5, interval * 3 / 4), 60, 0, 360, 255, 2, 8);
+	cv::imshow("ellipse_q", ell_q);
+	cv::imshow("ellipse_h", ell_h);
+
+	
+	//‰¹ŠK‚Ì”F¯
+	float threshold_q = 0.8f;
+	float threshold_h = 0.77f;
+	
+	std::vector<noteInfo> notes_info;
+	matchToPatern(original_image, image, notes_info, ell_q, lines_info, threshold_q, QUARTER);
+	matchToPatern(original_image, image, notes_info, ell_h, lines_info, threshold_h, HALF);
+
 	return notes_info;
 }
 
@@ -224,22 +253,23 @@ void drawNote(cv::Point pos, int note_type){//•`‚­ˆÊ’u‚ğ’¼Úw’è •â•ü‚Í‘‚©‚È‚
 }
 */
 
-void drawNoteFromScale(cv::Mat original_image, int x, int y, int scale, int step, linesInfo lines_info, int note_type) {
+void drawNoteFromScale(cv::Mat original_image, int x, int y, int scale, int step, linesInfo lines_info, NoteType note_type) {
 	int interval = lines_info.getLinesInterval();
 	//int y_from_scale = (NOTE_MI -scale) * (interval / 2) + lines_info.getLinesY()[step * 5 + 4];
 	int mi_y = +lines_info.getLinesY()[step * 5 + 4];
 	//•„“ª‚ğ•`‚­ˆÊ’u‚Í’¼Úw’è
-	if (note_type == 4) {
-		cv::ellipse(original_image, cv::Point(x,y), cv::Size(3, 4), 60, 0, 360, cv::Scalar(0,0,0), -1, CV_AA);
-	}else if (note_type == 2) {
-		cv::ellipse(original_image, cv::Point(x,y), cv::Size(3, 4), 60, 0, 360, cv::Scalar(0,0,0), 2, 8);
+	if (note_type == QUARTER) {
+		cv::ellipse(original_image, cv::Point(x,y), cv::Size(interval / 2, interval * 2 / 3), 60, 0, 360, cv::Scalar(0,0,0), -1, CV_AA);
+	}else if (note_type == HALF) {
+		cv::ellipse(original_image, cv::Point(x,y), cv::Size(interval * 2 / 5, interval * 3 / 4), 60, 0, 360, cv::Scalar(0,0,0), 2, 8);
+		std::cout << "unko" << std::endl;
 	}else {
 		return;
 	}
 
 	//•â•ü‚ÍscaleŒ©‚ÄŒˆ‚ß‚é
 	//‚Æ‚è‚ ‚¦‚¸‰º“ñ–{‚Ü‚Å
-	int hojo_l = 16;
+	int hojo_l = 16 * interval / 6;
 	if (scale < NOTE_RE) {//–Ê“|‚È‚Ì‚Å‚ß‚Á‚¿‚á‚‰¹‚ğl‚¦‚È‚¢
 		cv::line(original_image, cv::Point(x - hojo_l / 2, mi_y + interval), cv::Point(x + hojo_l / 2, mi_y + interval), cv::Scalar(0, 0, 0), 1, CV_AA);
 		if (scale < NOTE_SI_L) {
@@ -258,7 +288,7 @@ int main(int argc, char* argv[])
 
 	//ƒR[ƒh”F¯
 	STRING text_out;
-	char* data = "C:/Users/MEIP-users/Documents/flog.png";
+	char* data = "C:/Users/MEIP-users/Documents/flog_l.png";
 	tess.ProcessPages(data, NULL, 0, &text_out);
 	tesseract::ResultIterator* ri = tess.GetIterator();
 	tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
@@ -306,7 +336,7 @@ int main(int argc, char* argv[])
 	for (int i = 0; i < notes_info.size(); i++) {
 		int scale_change = -4;
 		drawNoteFromScale(score, notes_info[i].getPosX(), notes_info[i].getPosY() - scale_change * lines_info.getLinesInterval() / 4, 
-			notes_info[i].getScale() + scale_change, notes_info[i].getStep(), lines_info, 4);
+			notes_info[i].getScale() + scale_change, notes_info[i].getStep(), lines_info, notes_info[i].getNoteType());
 	}
 	cv::imshow("score", score);
 
