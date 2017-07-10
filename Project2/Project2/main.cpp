@@ -216,27 +216,39 @@ std::vector<noteInfo> matchToPatern(cv::Mat original_image, cv::Mat image, std::
 }
 
 //---- 各音符に対し、コードネームを割り当てる
-void AssignChordnameToNote(noteInfo _note_info, std::vector<detectedText> dictionary, linesInfo _line_info) {
+void AssignChordnameToNote(noteInfo& _note_info, std::vector<detectedText> dictionary, linesInfo _line_info) {
 	int margin = _line_info.getLinesInterval();
+	//std::cout << "コード決めのマージンは" << margin << std::endl;
 	for (int chord = 0; chord < dictionary.size(); ++chord) //---- chord番目のやつに対して
-	{
+	{	
+		//std::cout << chord << "番目:" << dictionary[chord].getText() << std::endl;
+		//std::cout << "ノーツは" << _note_info.getStep() << "段目" << std::endl;
+		//std::cout << "コードは" << dictionary[chord].getStep() << "段目" << std::endl;
 		if (_note_info.getStep() == dictionary[chord].getStep()) //---- 同じ段にいる
 		{
+			//std::cout << "同じ段にいる" << std::endl;
+			//std::cout << "音符のX座標は" << _note_info.getPosX() << ", コードのx座標は" << dictionary[chord].getX1() << std::endl;
 			if (_note_info.getPosX() >= dictionary[chord].getX1() - margin) //---- X座標が左側のコードよりも右
 			{
-				if (chord != dictionary.size()-1) { //---- 
+
+				if (chord != dictionary.size() - 1) { //---- 
 					if (dictionary[chord].getStep() == dictionary[chord+1].getStep()) //---- 同じ段にいたら
 					{
 						if (dictionary[chord + 1].getX1() > _note_info.getPosX() + margin)
 						{
-							std::cout << dictionary[chord].getText() << std::endl;
+							//std::cout << "対応するコードは" << dictionary[chord].getText() << std::endl;
 							_note_info.setChordname(dictionary[chord].getText());
 						}
 					}
 					else //---- 同じ段にいなかったら
 					{
+						//std::cout << "対応するコードは" << dictionary[chord].getText() << std::endl;
 						_note_info.setChordname(dictionary[chord].getText());
 					}
+				}
+				else {
+					std::cout << "対応するコードは" << dictionary[chord].getText() << std::endl;
+					_note_info.setChordname(dictionary[chord].getText());
 				}
 			}
 		}
@@ -333,15 +345,16 @@ std::vector<int> determineScale(std::string _chordname) {
 		scalenotes[14] = scalenotes[7] + 12; //---- ココ
 	}
 
-	std::cout << "scalenotes: " << scalenotes.size() << std::endl;
 	return scalenotes;
 }
 
 
 //---- 実際の音階、（コードネーム、スケール情報、）何度下情報を与えると、よさげなハモり音を返してくれる
-void getHarmonicNotes(std::vector<noteInfo> _note_info, int degree, std::vector<int>& harmony_tones)
+std::vector<int> getHarmonicNotes(std::vector<noteInfo> _note_info, std::vector<detectedText> _dictionary, int degree)
 {
-	std::string main_code = _note_info[_note_info.size() - 1].getChordname();
+	std::vector<int> harmony_tones;
+	std::string main_code = _dictionary[_dictionary.size() - 1].getText();
+	std::cout << "main_code" << main_code << std::endl;
 	//---- 最後の音符が乗ってるコードがまあ主調でしょという仮定
 
 	if (degree > 0) { --degree; }
@@ -352,38 +365,42 @@ void getHarmonicNotes(std::vector<noteInfo> _note_info, int degree, std::vector<
 		std::string cn = _note_info[i].getChordname();        //---- コードネームを見る
 		std::vector<int> sn = _note_info[i].getScalenotes(); //---- スケールを見る
 		int nt = _note_info[i].getScale();					//---- 音階を見る
+		std::cout << i << "番目の音階は：" << nt << std::endl;
 
-
-		std::cout << "fuck" << std::endl;
-		std::cout << sn.size() << std::endl;
 
 		bool isNoteOnTheChord = (nt == sn[0] || nt == sn[2] || nt == sn[4] || nt == sn[7] || nt == sn[9] || nt == sn[11] || nt == sn[14]);
 		if (cn == main_code && isNoteOnTheChord) { //---- コードネームが主調と一緒で、かつ音階がそのコードに乗ってたら
+			std::cout << i << "番目の音は特殊処理" << std::endl;
 			for (int j = 0; j < sn.size(); ++j) {
 				if (nt == sn[j]) //---- ノートが一致してる音に対して
 				{
 					int m = (std::min({ abs(j + degree - 0), abs(j + degree - 2), abs(j + degree - 4),  abs(j + degree - 7),  abs(j + degree - 9),  abs(j + degree - 11), abs(j + degree - 14) }));
 					//---- コード上でよさげなハモり音探す
-					harmony_tones.emplace_back(sn[m]);
+					harmony_tones.emplace_back(sn[abs(m - j - degree)]);
+					std::cout << "ハモり音：" << sn[abs(m - j - degree)] << std::endl;
 					break;
 				}
 			}
 		}
 		else { //---- そうでない場合
-			for (int j = 0; j < sn.size(); ++j) { //---- それ以外の場合
+			for (int j = 0; j < sn.size(); ++j) { // スケール上を全走査
 				if (sn[j] == nt) //---- スケール上にノートが一致してる音があったら
 				{
 					harmony_tones.emplace_back(sn[j + degree]); //---- degree度上の音を返す
+					std::cout << "ハモり音：" << sn[j + degree] << std::endl;
 					break;
 				}
 				if (sn[j] == nt + 1) //---- それ以外の場合、とりあえず半音ずらしたやつの下の音を見る
 				{
 					harmony_tones.emplace_back(sn[j + degree]); //---- んでdegree度上の音を返す
+					std::cout << "ハモり音：" << sn[j + degree] << std::endl;
 					break;
 				}
 			}
 		}
 	}
+	
+	return harmony_tones;
 }
 
 std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info){
@@ -462,8 +479,6 @@ int main(int argc, char* argv[])
 	//---- 何度上、あるいは下か
 	int degree = -3;
 
-	
-
 	//opencvによる楽譜認識
 	cv::Mat score = cv::imread(data);
 	//cv::imshow("score", score);
@@ -505,6 +520,7 @@ int main(int argc, char* argv[])
 					if (i == 0) { //---- 1段目
 						if (chord.getY2() < lines_y[i]) {
 							chord.setStep(0);
+							break;
 						}
 					}
 					else if ((i % 5 == 4) && ((i+1) % 5 == 0) ) { //---- 段の間
@@ -528,30 +544,33 @@ int main(int argc, char* argv[])
 
 	//---- 符頭の乗ってるコードネームをdictionary使って決定
 	for (int note = 0; note < notes_info.size(); ++note) {
-		std::string chord_name;
+		std::cout << note << "番目のノーツは：" << notes_info[note].getScale() << std::endl;
 		AssignChordnameToNote(notes_info[note], dictionary, lines_info);
+		std::cout << "結局これが入りました："<<notes_info[note].getChordname() << std::endl;
 	}
 
 	//---- コードネームからScale認識
 	for (int note = 0; note < notes_info.size(); ++note) {
 		std::vector<int> scale_notes;
 		std::string cn = notes_info[note].getChordname();
-		//std::cout << "" << << std::endl;
 		scale_notes = determineScale(cn);
-		std::cout << "scale_notes:" << scale_notes.size() << std::endl;
 		notes_info[note].setScalenotes(scale_notes);
 	}
 
 	//---- 実際の音階、コードネーム、何度下情報を与えると、よさげなハモり音を返してくれる
-	std::vector<int> harmony_tones;
-	getHarmonicNotes(notes_info, degree, harmony_tones);//---- harmony_tonesによさげなハモり音を格納
-	std::cout << "unko" << std::endl;
+	std::vector<int> harmony_tones = getHarmonicNotes(notes_info, dictionary, degree);//---- harmony_tonesによさげなハモり音(実際の音高)を格納
+	for (int i = 0; i < notes_info.size(); i++) {
+		std::cout << i << std::endl;
+		std::cout << "original_notes:" << notes_info[i].getScale() << std::endl;
+		std::cout << "harmony_notes_size:" << harmony_tones.size() << std::endl;
+		std::cout << "harmony_tones:" << harmony_tones[i] << std::endl;
+	}
 
 	//ハモリ生成
 	for (int i = 0; i < notes_info.size(); i++) {
 		int scale_change = -4;
-		drawNoteFromScale(score, notes_info[i].getPosX(), notes_info[i].getPosY() - scale_change * lines_info.getLinesInterval() / 4, 
-			notes_info[i].getScale() + scale_change, notes_info[i].getStep(), lines_info, notes_info[i].getNoteType());
+		drawNoteFromScale(score, notes_info[i].getPosX(), notes_info[i].getPosY() + abs(notes_info[i].getScale() - harmony_tones[i]) * lines_info.getLinesInterval() / 4, 
+			harmony_tones[i], notes_info[i].getStep(), lines_info, notes_info[i].getNoteType());
 	}
 	cv::imshow("score", score);
 
