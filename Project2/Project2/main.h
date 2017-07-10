@@ -138,6 +138,12 @@ public:
 	void setScalenotes(std::vector<int> _scale_notes);
 	NoteType getNoteType();
 
+	static bool noteInfo::compareNote(noteInfo left, noteInfo right) {
+		if (left.step < right.step) { return true; }
+		else if (left.step > right.step) { return false; }
+		else if (left.pos_x < right.pos_x) { return true; }
+		else return false;
+	};
 };
 
 noteInfo::noteInfo(int x, int y, int sc, int st, NoteType nt) {
@@ -184,3 +190,4 @@ void noteInfo::setScalenotes(std::vector<int> _scale_notes) {
 NoteType noteInfo::getNoteType() {
 	return note_type;
 }
+

@@ -245,96 +245,96 @@ void AssignChordnameToNote(noteInfo _note_info, std::vector<detectedText> dictio
 
 //---- 与えられたコードネームに対し、スケールを返す
 std::vector<int> determineScale(std::string _chordname) {
-	std::vector<int> scalenotes(15, 0); //---- scalenotes[7] が真ん中の主音
-	if (_chordname.length() == 1) {
-		switch (_chordname[0])
-		{
-		case 'A': scalenotes[7] = NOTE_RA;
-			break;
-		case 'B': scalenotes[7] = NOTE_SI;
-			break;
-		case 'C':
-		case 'c':
-			scalenotes[7] = NOTE_DO;
-			break;
-		case 'D': scalenotes[7] = NOTE_RE;
-			break;
-		case 'E': scalenotes[7] = NOTE_MI;
-			break;
-		case 'F':
-		case 'f':
-			scalenotes[7] = NOTE_FA;
-			break;
-		case 'G': scalenotes[7] = NOTE_SO;
-			break;
-		default:
-			std::cout << "Chord reading error!" << std::endl;
-			getchar();
-			break;
+	std::vector<int> _Scalenotes;
+		std::vector<int> scalenotes(15, 0); //---- scalenotes[7] が真ん中の主音
+		if (_chordname.length() == 1){
+			switch (_chordname[0])
+			{
+			case 'A': scalenotes[7] = NOTE_RA;
+				break;
+			case 'B': scalenotes[7] = NOTE_SI;
+				break;
+			case 'C':
+			case 'c':
+				scalenotes[7] = NOTE_DO;
+				break;
+			case 'D': scalenotes[7] = NOTE_RE;
+				break;
+			case 'E': scalenotes[7] = NOTE_MI;
+				break;
+			case 'F':
+			case 'f':
+				scalenotes[7] = NOTE_FA;
+				break;
+			case 'G': scalenotes[7] = NOTE_SO;
+				break;
+			default:
+				std::cout << "Chord reading error!" << std::endl;
+				getchar();
+				break;
+			}
+			// 長調
+			scalenotes[0] = scalenotes[7] - 12; //---- ココ
+			scalenotes[1] = scalenotes[7] - 10;
+			scalenotes[2] = scalenotes[7] - 8; //---- ココ
+			scalenotes[3] = scalenotes[7] - 7;
+			scalenotes[4] = scalenotes[7] - 5; //---- ココ
+			scalenotes[5] = scalenotes[7] - 3;
+			scalenotes[6] = scalenotes[7] - 1;
+												//---- ココ
+			scalenotes[8] = scalenotes[7] + 2;
+			scalenotes[9] = scalenotes[7] + 4; //---- ココ
+			scalenotes[10] = scalenotes[7] + 5;
+			scalenotes[11] = scalenotes[7] + 7; //---- ココ
+			scalenotes[12] = scalenotes[7] + 9;
+			scalenotes[13] = scalenotes[7] + 11;
+			scalenotes[14] = scalenotes[7] + 12; //---- ココ
 		}
-		// 長調
-		scalenotes[0] = scalenotes[7] - 12; //---- ココ
-		scalenotes[1] = scalenotes[7] - 10;
-		scalenotes[2] = scalenotes[7] - 8; //---- ココ
-		scalenotes[3] = scalenotes[7] - 7;
-		scalenotes[4] = scalenotes[7] - 5; //---- ココ
-		scalenotes[5] = scalenotes[7] - 3;
-		scalenotes[6] = scalenotes[7] - 1;
-		//---- ココ
-		scalenotes[8] = scalenotes[7] + 2;
-		scalenotes[9] = scalenotes[7] + 4; //---- ココ
-		scalenotes[10] = scalenotes[7] + 5;
-		scalenotes[11] = scalenotes[7] + 7; //---- ココ
-		scalenotes[12] = scalenotes[7] + 9;
-		scalenotes[13] = scalenotes[7] + 11;
-		scalenotes[14] = scalenotes[7] + 12; //---- ココ
-	}
-	else if (_chordname[1] == 'm') { //一応短調チェック
-		switch (_chordname[0])
-		{
-		case 'A': scalenotes[7] = NOTE_RA;
-			break;
-		case 'B': scalenotes[7] = NOTE_SI;
-			break;
-		case 'C':
-		case 'c':
-			scalenotes[7] = NOTE_DO;
-			break;
-		case 'D': scalenotes[7] = NOTE_RE;
-			break;
-		case 'E': scalenotes[7] = NOTE_MI;
-			break;
-		case 'F':
-		case 'f':
-			scalenotes[7] = NOTE_FA;
-			break;
-		case 'G': scalenotes[7] = NOTE_SO;
-			break;
-		default:
-			std::cout << "Chord reading error!" << std::endl;
-			getchar();
-			break;
+		else if (_chordname[1] == 'm') { //一応短調チェック
+			switch (_chordname[0])
+			{
+			case 'A': scalenotes[7] = NOTE_RA;
+				break;
+			case 'B': scalenotes[7] = NOTE_SI;
+				break;
+			case 'C':
+			case 'c':
+				scalenotes[7] = NOTE_DO;
+				break;
+			case 'D': scalenotes[7] = NOTE_RE;
+				break;
+			case 'E': scalenotes[7] = NOTE_MI;
+				break;
+			case 'F':
+			case 'f':
+				scalenotes[7] = NOTE_FA;
+				break;
+			case 'G': scalenotes[7] = NOTE_SO;
+				break;
+			default:
+				std::cout << "Chord reading error!" << std::endl;
+				getchar();
+				break;
+			}
+			// 短調
+			scalenotes[0] = scalenotes[7] - 12; //---- ココ
+			scalenotes[1] = scalenotes[7] - 10;
+			scalenotes[2] = scalenotes[7] - 9; //---- ココ
+			scalenotes[3] = scalenotes[7] - 7;
+			scalenotes[4] = scalenotes[7] - 5; //---- ココ
+			scalenotes[5] = scalenotes[7] - 4;
+			scalenotes[6] = scalenotes[7] - 2;
+												//---- ココ
+			scalenotes[8] = scalenotes[7] + 2;
+			scalenotes[9] = scalenotes[7] + 3; //---- ココ
+			scalenotes[10] = scalenotes[7] + 5;
+			scalenotes[11] = scalenotes[7] + 7; //---- ココ
+			scalenotes[12] = scalenotes[7] + 8;
+			scalenotes[13] = scalenotes[7] + 10;
+			scalenotes[14] = scalenotes[7] + 12; //---- ココ
 		}
-		// 短調
-		scalenotes[0] = scalenotes[7] - 12; //---- ココ
-		scalenotes[1] = scalenotes[7] - 10;
-		scalenotes[2] = scalenotes[7] - 9; //---- ココ
-		scalenotes[3] = scalenotes[7] - 7;
-		scalenotes[4] = scalenotes[7] - 5; //---- ココ
-		scalenotes[5] = scalenotes[7] - 4;
-		scalenotes[6] = scalenotes[7] - 2;
-		//---- ココ
-		scalenotes[8] = scalenotes[7] + 2;
-		scalenotes[9] = scalenotes[7] + 3; //---- ココ
-		scalenotes[10] = scalenotes[7] + 5;
-		scalenotes[11] = scalenotes[7] + 7; //---- ココ
-		scalenotes[12] = scalenotes[7] + 8;
-		scalenotes[13] = scalenotes[7] + 10;
-		scalenotes[14] = scalenotes[7] + 12; //---- ココ
-	}
 
-	std::cout << "scalenotes: " << scalenotes.size() << std::endl;
-	return scalenotes;
+	return _Scalenotes;
 }
 
 
@@ -343,6 +343,7 @@ void getHarmonicNotes(std::vector<noteInfo> _note_info, int degree, std::vector<
 {
 	std::string main_code = _note_info[_note_info.size() - 1].getChordname();
 	//---- 最後の音符が乗ってるコードがまあ主調でしょという仮定
+	std::cout << "fuck" << std::endl;
 
 	if (degree > 0) { --degree; }
 	else { ++degree; }
@@ -353,9 +354,9 @@ void getHarmonicNotes(std::vector<noteInfo> _note_info, int degree, std::vector<
 		std::vector<int> sn = _note_info[i].getScalenotes(); //---- スケールを見る
 		int nt = _note_info[i].getScale();					//---- 音階を見る
 
-
-		std::cout << "fuck" << std::endl;
-		std::cout << sn.size() << std::endl;
+		for (int i = 0; i < sn.size(); ++i) {
+			std::cout << sn[i] << std::endl;
+		}
 
 		bool isNoteOnTheChord = (nt == sn[0] || nt == sn[2] || nt == sn[4] || nt == sn[7] || nt == sn[9] || nt == sn[11] || nt == sn[14]);
 		if (cn == main_code && isNoteOnTheChord) { //---- コードネームが主調と一緒で、かつ音階がそのコードに乗ってたら
@@ -409,7 +410,6 @@ std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesIn
 
 	return notes_info;
 }
-
 
 /*
 void drawNote(cv::Point pos, int note_type){//描く位置を直接指定 補助線は書かない
@@ -498,7 +498,7 @@ int main(int argc, char* argv[])
 
 			int x1, y1, x2, y2;//x:横軸(右ほど大) y:縦軸(下ほど大)　
 			ri->BoundingBox(level, &x1, &y1, &x2, &y2);
-			if (ri->Confidence(level) > 90.0f) {
+			if (ri->Confidence(level) > 7.0f) {
 				detectedText chord(x1, y1, x2, y2, ri->Confidence(level), UTF8toSJIS(word));
 				std::vector<int> lines_y = lines_info.getLinesY();
 				for (int i = 0; i < lines_y.size(); ++i) {
@@ -523,7 +523,6 @@ int main(int argc, char* argv[])
 
 	//符頭の認識
 	std::vector<noteInfo> notes_info = detectNotes(binarized, score, lines_info);
-	std::sort(notes_info.begin(), notes_info.end(), noteInfo::compareNote);
 	//cv::imshow("score", score);
 
 	//---- 符頭の乗ってるコードネームをdictionary使って決定
@@ -536,9 +535,7 @@ int main(int argc, char* argv[])
 	for (int note = 0; note < notes_info.size(); ++note) {
 		std::vector<int> scale_notes;
 		std::string cn = notes_info[note].getChordname();
-		//std::cout << "" << << std::endl;
 		scale_notes = determineScale(cn);
-		std::cout << "scale_notes:" << scale_notes.size() << std::endl;
 		notes_info[note].setScalenotes(scale_notes);
 	}
 
