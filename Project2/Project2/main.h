@@ -8,6 +8,7 @@ private:
 	int x2;
 	int y1;
 	int y2;
+	int step; //---- 五線の何段目か
 	float conf;
 	std::string text;
 public:
@@ -17,8 +18,10 @@ public:
 	int getX2();
 	int getY1();
 	int getY2();
+	int getStep();
 	float getConf();
 	std::string getText();
+	void setStep(int _step);
 	//~detectedText();
 };
 
@@ -47,12 +50,20 @@ int detectedText::getY2() {
 	return detectedText::y2;
 }
 
+int detectedText::getStep() {
+	return detectedText::step;
+}
+
 float detectedText::getConf() {
 	return detectedText::conf;
 }
 
 std::string detectedText::getText() {
 	return detectedText::text;
+}
+
+void detectedText::setStep(int _step){
+	this->step = _step;
 }
 
 //読み込んだ五線のクラス
@@ -62,7 +73,7 @@ private:
 	int lines_left;//五線の左端
 	int lines_right;//五線の右端
 	int lines_interval;//五線の線同士の間隔
-	int  steps_num;//五線が何段あるか
+	int steps_num;//五線が何段あるか
 public:
 	linesInfo(std::vector<int> y, int left, int right, int interval, int steps_num);
 	std::vector<int> getLinesY();
@@ -104,14 +115,20 @@ class noteInfo {
 private:
 	int pos_x;
 	int pos_y;
-	int scale;
+	int scale; //---- 音高
 	int step;//何段目の五線か 最初の五線を0とする
+	std::string chordname = ""; //---- その音符の乗ってるコードネーム
+	std::vector<int> scalenotes; //---- そのコードネームに対応するスケール
 public:
 	noteInfo(int x, int y, int sc, int st);
 	int getPosX();
 	int getPosY();
 	int getScale();
 	int getStep();
+	std::string getChordname();
+	std::vector<int> getScalenotes();
+	void setChordname(std::string _chord_name);
+	void setScalenotes(std::vector<int> _scale_notes);
 };
 
 noteInfo::noteInfo(int x, int y, int sc, int st) {
@@ -135,4 +152,20 @@ int noteInfo::getScale(){
 
 int noteInfo::getStep() {
 	return step;
+}
+
+std::string noteInfo::getChordname() {
+	return chordname;
+}
+
+std::vector<int> noteInfo::getScalenotes() {
+	return scalenotes;
+}
+
+void noteInfo::setChordname(std::string _chord_name) {
+	this->chordname = _chord_name;
+}
+
+void noteInfo::setScalenotes(std::vector<int> _scale_notes) {
+	this->scalenotes = _scale_notes;
 }

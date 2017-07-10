@@ -210,6 +210,178 @@ std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesIn
 	return notes_info;
 }
 
+//---- 各音符に対し、コードネームを割り当てる
+void AssignChordnameToNote(noteInfo _note_info, std::vector<detectedText> dictionary, linesInfo _line_info) {
+	int margin = _line_info.getLinesInterval();
+	for (int chord = 0; chord < dictionary.size(); ++chord) //---- chord番目のやつに対して
+	{
+		if (_note_info.getStep() == dictionary[chord].getStep()) //---- 同じ段にいる
+		{
+			if (_note_info.getPosX() >= dictionary[chord].getX1() - margin) //---- X座標が左側のコードよりも右
+			{
+				if (chord != dictionary.size()-1) { //---- 
+					if (dictionary[chord].getStep() == dictionary[chord+1].getStep()) //---- 同じ段にいたら
+					{
+						if (dictionary[chord + 1].getX1() > _note_info.getPosX() + margin)
+						{
+							std::cout << dictionary[chord].getText() << std::endl;
+							_note_info.setChordname(dictionary[chord].getText());
+						}
+					}
+					else //---- 同じ段にいなかったら
+					{
+						_note_info.setChordname(dictionary[chord].getText());
+					}
+				}
+			}
+		}
+	}
+}
+
+//---- 与えられたコードネームに対し、スケールを返す
+std::vector<int> determineScale(std::string _chordname) {
+	std::vector<int> _Scalenotes;
+		std::vector<int> scalenotes(15, 0); //---- scalenotes[7] が真ん中の主音
+		if (_chordname.length() == 1){
+			switch (_chordname[0])
+			{
+			case 'A': scalenotes[7] = NOTE_RA;
+				break;
+			case 'B': scalenotes[7] = NOTE_SI;
+				break;
+			case 'C':
+			case 'c':
+				scalenotes[7] = NOTE_DO;
+				break;
+			case 'D': scalenotes[7] = NOTE_RE;
+				break;
+			case 'E': scalenotes[7] = NOTE_MI;
+				break;
+			case 'F':
+			case 'f':
+				scalenotes[7] = NOTE_FA;
+				break;
+			case 'G': scalenotes[7] = NOTE_SO;
+				break;
+			default:
+				std::cout << "Chord reading error!" << std::endl;
+				getchar();
+				break;
+			}
+			// 長調
+			scalenotes[0] = scalenotes[7] - 12; //---- ココ
+			scalenotes[1] = scalenotes[7] - 10;
+			scalenotes[2] = scalenotes[7] - 8; //---- ココ
+			scalenotes[3] = scalenotes[7] - 7;
+			scalenotes[4] = scalenotes[7] - 5; //---- ココ
+			scalenotes[5] = scalenotes[7] - 3;
+			scalenotes[6] = scalenotes[7] - 1;
+												//---- ココ
+			scalenotes[8] = scalenotes[7] + 2;
+			scalenotes[9] = scalenotes[7] + 4; //---- ココ
+			scalenotes[10] = scalenotes[7] + 5;
+			scalenotes[11] = scalenotes[7] + 7; //---- ココ
+			scalenotes[12] = scalenotes[7] + 9;
+			scalenotes[13] = scalenotes[7] + 11;
+			scalenotes[14] = scalenotes[7] + 12; //---- ココ
+		}
+		else if (_chordname[1] == 'm') { //一応短調チェック
+			switch (_chordname[0])
+			{
+			case 'A': scalenotes[7] = NOTE_RA;
+				break;
+			case 'B': scalenotes[7] = NOTE_SI;
+				break;
+			case 'C':
+			case 'c':
+				scalenotes[7] = NOTE_DO;
+				break;
+			case 'D': scalenotes[7] = NOTE_RE;
+				break;
+			case 'E': scalenotes[7] = NOTE_MI;
+				break;
+			case 'F':
+			case 'f':
+				scalenotes[7] = NOTE_FA;
+				break;
+			case 'G': scalenotes[7] = NOTE_SO;
+				break;
+			default:
+				std::cout << "Chord reading error!" << std::endl;
+				getchar();
+				break;
+			}
+			// 短調
+			scalenotes[0] = scalenotes[7] - 12; //---- ココ
+			scalenotes[1] = scalenotes[7] - 10;
+			scalenotes[2] = scalenotes[7] - 9; //---- ココ
+			scalenotes[3] = scalenotes[7] - 7;
+			scalenotes[4] = scalenotes[7] - 5; //---- ココ
+			scalenotes[5] = scalenotes[7] - 4;
+			scalenotes[6] = scalenotes[7] - 2;
+												//---- ココ
+			scalenotes[8] = scalenotes[7] + 2;
+			scalenotes[9] = scalenotes[7] + 3; //---- ココ
+			scalenotes[10] = scalenotes[7] + 5;
+			scalenotes[11] = scalenotes[7] + 7; //---- ココ
+			scalenotes[12] = scalenotes[7] + 8;
+			scalenotes[13] = scalenotes[7] + 10;
+			scalenotes[14] = scalenotes[7] + 12; //---- ココ
+		}
+
+	return _Scalenotes;
+}
+
+
+//---- 実際の音階、（コードネーム、スケール情報、）何度下情報を与えると、よさげなハモり音を返してくれる
+void getHarmonicNotes(std::vector<noteInfo> _note_info, int degree, std::vector<int>& harmony_tones) 
+{
+	std::string main_code = _note_info[_note_info.size()-1].getChordname();
+	//---- 最後の音符が乗ってるコードがまあ主調でしょという仮定
+	std::cout << "fuck" << std::endl;
+
+	if (degree > 0) { --degree; }
+	else { ++degree; }
+
+	for (int i = 0; i < _note_info.size(); i++) //---- 各音符についてみていく
+	{
+		std::string cn = _note_info[i].getChordname();        //---- コードネームを見る
+		std::vector<int> sn = _note_info[i].getScalenotes(); //---- スケールを見る
+		int nt = _note_info[i].getScale();					//---- 音階を見る
+
+		for (int i = 0; i < sn.size(); ++i) {
+			std::cout << sn[i] << std::endl;
+		}
+
+		bool isNoteOnTheChord = (nt == sn[0] || nt == sn[2] || nt == sn[4] || nt == sn[7] || nt == sn[9] || nt == sn[11] || nt == sn[14]);
+		if (cn == main_code && isNoteOnTheChord) { //---- コードネームが主調と一緒で、かつ音階がそのコードに乗ってたら
+			for (int j = 0; j < sn.size(); ++j) {
+				if (nt == sn[j]) //---- ノートが一致してる音に対して
+				{
+					int m = (std::min({ abs(j + degree - 0), abs(j + degree - 2), abs(j + degree - 4),  abs(j + degree - 7),  abs(j + degree - 9),  abs(j + degree - 11), abs(j + degree - 14) }));
+					//---- コード上でよさげなハモり音探す
+					harmony_tones.emplace_back(sn[m]);
+					break;
+				}
+			}
+		}
+		else { //---- そうでない場合
+			for (int j = 0; j < sn.size(); ++j) { //---- それ以外の場合
+				if (sn[j] == nt) //---- スケール上にノートが一致してる音があったら
+				{
+					harmony_tones.emplace_back(sn[j + degree]); //---- degree度上の音を返す
+					break;
+				}
+				if (sn[j] == nt + 1) //---- それ以外の場合、とりあえず半音ずらしたやつの下の音を見る
+				{
+					harmony_tones.emplace_back(sn[j + degree]); //---- んでdegree度上の音を返す
+					break;
+				}
+			}
+		}
+	}
+}
+
 /*
 void drawNote(cv::Point pos, int note_type){//描く位置を直接指定 補助線は書かない
 	if (note_type == 4) {
@@ -251,36 +423,13 @@ void drawNoteFromScale(cv::Mat original_image, int x, int y, int scale, int step
 }
 
 
+//--- main関数
 int main(int argc, char* argv[])
-{	
-	tesseract::TessBaseAPI tess;
-	tess.Init("C:/Users/MEIP-users/Documents/tesseract-3.02.02-win32-lib-include-dirs/tessdata", "eng");
+{
 
-	//コード認識
-	STRING text_out;
 	char* data = "C:/Users/MEIP-users/Documents/flog.png";
-	tess.ProcessPages(data, NULL, 0, &text_out);
-	tesseract::ResultIterator* ri = tess.GetIterator();
-	tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
-	
-	//コード格納
-	std::vector<detectedText> dictionary;//コード保管用
-	if (ri != 0) {
-		do {
-			const char* word = ri->GetUTF8Text(level);
-			if (word == NULL || strlen(word) == 0) {
-				continue;
-			}
-
-			int x1, y1, x2, y2;//x:横軸(右ほど大) y:縦軸(下ほど大)　
-			ri->BoundingBox(level, &x1, &y1, &x2, &y2);
-			if (ri->Confidence(level) > 7.0f) {
-				detectedText code(x1, y1, x2, y2, ri->Confidence(level), UTF8toSJIS(word));
-				printf("(%d, %d)-(%d, %d) : %.1f%% : %s \n", code.getX1(), code.getY1(), code.getX2(), code.getY2(), code.getConf(), code.getText().c_str());
-				dictionary.push_back(code);
-			}
-		} while (ri->Next(level));
-	}
+	//---- 何度上、あるいは下か
+	int degree = -3;
 
 	
 
@@ -298,9 +447,71 @@ int main(int argc, char* argv[])
 	linesInfo lines_info = detectLines(binarized,score);
 	//cv::imshow("score", score);
 	
+	tesseract::TessBaseAPI tess;
+	tess.Init("C:/Users/MEIP-users/Documents/tesseract-3.02.02-win32-lib-include-dirs/tessdata", "eng");
+
+	//コード認識
+	STRING text_out;
+	tess.ProcessPages(data, NULL, 0, &text_out);
+	tesseract::ResultIterator* ri = tess.GetIterator();
+	tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
+
+	//コード格納
+	std::vector<detectedText> dictionary;//コード保管用
+	if (ri != 0) {
+		do {
+			const char* word = ri->GetUTF8Text(level);
+			if (word == NULL || strlen(word) == 0) {
+				continue;
+			}
+
+			int x1, y1, x2, y2;//x:横軸(右ほど大) y:縦軸(下ほど大)　
+			ri->BoundingBox(level, &x1, &y1, &x2, &y2);
+			if (ri->Confidence(level) > 7.0f) {
+				detectedText chord(x1, y1, x2, y2, ri->Confidence(level), UTF8toSJIS(word));
+				std::vector<int> lines_y = lines_info.getLinesY();
+				for (int i = 0; i < lines_y.size(); ++i) {
+					if (i == 0) { //---- 1段目
+						if (chord.getY2() < lines_y[i]) {
+							chord.setStep(0);
+						}
+					}
+					else if ((i % 5 == 4) && ((i+1) % 5 == 0) ) { //---- 段の間
+						chord.setStep(1);
+					}
+					else {
+						chord.setStep(-1);
+					}
+				}
+				//printf("(%d, %d)-(%d, %d) : %.1f%% : %s \n", chord.getX1(), chord.getY1(), chord.getX2(), chord.getY2(), chord.getConf(), chord.getText().c_str());
+				std::cout << "(" << chord.getX1() << ", " << chord.getY1() << ")-(" << chord.getX2() << ", " << chord.getY2() << ") : " << chord.getConf()  << "%" << chord.getText().c_str() << ", "<< chord.getStep() << "段目" <<std::endl;
+				dictionary.push_back(chord);
+			}
+		} while (ri->Next(level));
+	}
+
 	//符頭の認識
-	std::vector<noteInfo> notes_info = detectNotes(binarized, score,lines_info);
+	std::vector<noteInfo> notes_info = detectNotes(binarized, score, lines_info);
 	//cv::imshow("score", score);
+
+	//---- 符頭の乗ってるコードネームをdictionary使って決定
+	for (int note = 0; note < notes_info.size(); ++note) {
+		std::string chord_name;
+		AssignChordnameToNote(notes_info[note], dictionary, lines_info);
+	}
+
+	//---- コードネームからScale認識
+	for (int note = 0; note < notes_info.size(); ++note) {
+		std::vector<int> scale_notes;
+		std::string cn = notes_info[note].getChordname();
+		scale_notes = determineScale(cn);
+		notes_info[note].setScalenotes(scale_notes);
+	}
+
+	//---- 実際の音階、コードネーム、何度下情報を与えると、よさげなハモり音を返してくれる
+	std::vector<int> harmony_tones;
+	getHarmonicNotes(notes_info, degree, harmony_tones);//---- harmony_tonesによさげなハモり音を格納
+	std::cout << "unko" << std::endl;
 
 	//ハモリ生成
 	for (int i = 0; i < notes_info.size(); i++) {
