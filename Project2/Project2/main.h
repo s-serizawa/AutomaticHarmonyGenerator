@@ -179,6 +179,8 @@ void noteInfo::setChordname(std::string _chord_name) {
 void noteInfo::setScalenotes(std::vector<int> _scale_notes) {
 	this->scalenotes = _scale_notes;
 
-	NoteType noteInfo::getNoteType() {
+}
+
+NoteType noteInfo::getNoteType() {
 	return note_type;
 }

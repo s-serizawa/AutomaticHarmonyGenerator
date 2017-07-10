@@ -339,9 +339,9 @@ std::vector<int> determineScale(std::string _chordname) {
 
 
 //---- 実際の音階、（コードネーム、スケール情報、）何度下情報を与えると、よさげなハモり音を返してくれる
-void getHarmonicNotes(std::vector<noteInfo> _note_info, int degree, std::vector<int>& harmony_tones) 
+void getHarmonicNotes(std::vector<noteInfo> _note_info, int degree, std::vector<int>& harmony_tones)
 {
-	std::string main_code = _note_info[_note_info.size()-1].getChordname();
+	std::string main_code = _note_info[_note_info.size() - 1].getChordname();
 	//---- 最後の音符が乗ってるコードがまあ主調でしょという仮定
 	std::cout << "fuck" << std::endl;
 
@@ -385,8 +385,9 @@ void getHarmonicNotes(std::vector<noteInfo> _note_info, int degree, std::vector<
 			}
 		}
 	}
+}
 
-std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
+std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info){
 	int interval = lines_info.getLinesInterval();
 	
 	//とりあえず4分と2分のみ
@@ -457,7 +458,7 @@ void drawNoteFromScale(cv::Mat original_image, int x, int y, int scale, int step
 int main(int argc, char* argv[])
 {
 
-	char* data = "C:/Users/MEIP-users/Documents/flog.png";
+	char* data = "C:/Users/MEIP-users/Documents/flog_l.png";
 	//---- 何度上、あるいは下か
 	int degree = -3;
 
