@@ -257,12 +257,13 @@ void drawNoteFromScale(cv::Mat original_image, int x, int y, int scale, int step
 	int interval = lines_info.getLinesInterval();
 	//int y_from_scale = (NOTE_MI -scale) * (interval / 2) + lines_info.getLinesY()[step * 5 + 4];
 	int mi_y = +lines_info.getLinesY()[step * 5 + 4];
-	//符頭を描く位置は直接指定
+	//符頭と棒を描く位置は直接指定
 	if (note_type == QUARTER) {
 		cv::ellipse(original_image, cv::Point(x,y), cv::Size(interval / 2, interval * 2 / 3), 60, 0, 360, cv::Scalar(0,0,0), -1, CV_AA);
+		cv::line(original_image, cv::Point(x + interval  * 2 / 3, y - interval * 7 / 2), cv::Point(x + interval * 2 / 3, y), cv::Scalar(0, 0, 0), 1, CV_AA);
 	}else if (note_type == HALF) {
 		cv::ellipse(original_image, cv::Point(x,y), cv::Size(interval * 2 / 5, interval * 3 / 4), 60, 0, 360, cv::Scalar(0,0,0), 2, 8);
-		std::cout << "unko" << std::endl;
+		cv::line(original_image, cv::Point(x + interval * 2 / 3, y - interval * 7 / 2), cv::Point(x + interval * 2 / 3, y), cv::Scalar(0, 0, 0), 1, CV_AA);
 	}else {
 		return;
 	}
@@ -322,7 +323,7 @@ int main(int argc, char* argv[])
 	cv::cvtColor(score, gray_score, CV_BGR2GRAY);//一応グレースケールに
 	//cv::imshow("gray_score", gray_score);
 	cv::threshold(gray_score, binarized, 240, 255, cv::THRESH_BINARY_INV);
-	cv::imshow("binarized", binarized);
+	//cv::imshow("binarized", binarized);
 
 	//五線の認識
 	linesInfo lines_info = detectLines(binarized,score);
