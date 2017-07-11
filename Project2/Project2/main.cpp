@@ -50,8 +50,24 @@ std::string UTF8toSJIS(const char* src) {
 linesInfo detectLines(cv::Mat image, cv::Mat original_image) {
 	std::vector<cv::Vec4i> lines;
 	//std::cout<< "image_size:" << original_image.cols << std::endl;
-	cv::HoughLinesP(image, lines, 4, CV_PI / 180.0 * 90, original_image.cols * 19 / 18, 40 * original_image.cols / 77, 10);
-		
+	cv::HoughLinesP(image, lines, 4, CV_PI / 180.0 * 90, original_image.cols, 40 * original_image.cols / 77, 10);
+	
+	//重複検出の防止
+	int ignore_line_margin = 3;
+	if (!lines.empty()) {
+		for (auto it = lines.begin(); it != lines.end(); ++it) {
+			cv::Vec4i pt = *it;
+			for (auto it2 = lines.begin(); it2 != lines.end(); ++it2) {
+				cv::Vec4i pt2 = *it2;
+				if (it != it2 && abs((pt[1] + pt[3]) / 2 - (pt2[1] + pt2[3]) / 2) <= ignore_line_margin) {
+					lines.erase(it);
+					break;
+				}
+			}
+		}
+	}
+	
+
 	//Draw detected segments on the original image.
 	if(!lines.empty()){
 		for (auto it = lines.begin(); it != lines.end(); ++it){
@@ -63,6 +79,8 @@ linesInfo detectLines(cv::Mat image, cv::Mat original_image) {
 		std::cout << "line not detected" << std::endl;
 		cv::waitKey();
 	}
+
+	std::cout << lines.size() << std::endl;
 
 	//とりあえず誤認識なしとする
 	
@@ -610,7 +628,7 @@ void drawNoteFromScale(cv::Mat original_image, int x, int y, int scale, int step
 int main(int argc, char* argv[])
 {
 
-	char* data = "C:/Users/MEIP-users/Documents/tulip.png";
+	char* data = "C:/Users/MEIP-users/Documents/tulip_3.png";
 	//---- 何度上、あるいは下か
 	int degree = -3;
 
