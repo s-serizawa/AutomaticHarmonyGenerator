@@ -50,8 +50,24 @@ std::string UTF8toSJIS(const char* src) {
 linesInfo detectLines(cv::Mat image, cv::Mat original_image) {
 	std::vector<cv::Vec4i> lines;
 	//std::cout<< "image_size:" << original_image.cols << std::endl;
-	cv::HoughLinesP(image, lines, 4, CV_PI / 180.0 * 90, original_image.cols * 19 / 18, 40 * original_image.cols / 77, 10);
-		
+	cv::HoughLinesP(image, lines, 4, CV_PI / 180.0 * 90, original_image.cols, 40 * original_image.cols / 77, 10);
+	
+	//重複検出の防止
+	int ignore_line_margin = 3;
+	if (!lines.empty()) {
+		for (auto it = lines.begin(); it != lines.end(); ++it) {
+			cv::Vec4i pt = *it;
+			for (auto it2 = lines.begin(); it2 != lines.end(); ++it2) {
+				cv::Vec4i pt2 = *it2;
+				if (it != it2 && abs((pt[1] + pt[3]) / 2 - (pt2[1] + pt2[3]) / 2) <= ignore_line_margin) {
+					lines.erase(it);
+					break;
+				}
+			}
+		}
+	}
+	
+
 	//Draw detected segments on the original image.
 	if(!lines.empty()){
 		for (auto it = lines.begin(); it != lines.end(); ++it){
@@ -63,6 +79,8 @@ linesInfo detectLines(cv::Mat image, cv::Mat original_image) {
 		std::cout << "line not detected" << std::endl;
 		cv::waitKey();
 	}
+
+	std::cout << lines.size() << std::endl;
 
 	//とりあえず誤認識なしとする
 	
@@ -238,14 +256,14 @@ std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesIn
 	cv::Mat ell_q = cv::Mat::zeros(interval * 3 / 2, interval * 3 / 2, CV_8UC1);
 	cv::Mat ell_h = cv::Mat::zeros(interval * 3 / 2, interval * 3 / 2, CV_8UC1);
 	cv::Point ell_center = cv::Point(interval * 3 / 4, interval * 3 / 4);
-	cv::ellipse(ell_q, ell_center, cv::Size(interval / 2, interval * 2 / 3), 60, 0, 360, 255, -1, CV_AA);
-	cv::ellipse(ell_h, ell_center, cv::Size(interval * 2 / 5, interval * 3 / 4), 60, 0, 360, 255, 2, 8);
+	cv::ellipse(ell_q, ell_center, cv::Size(round(interval *0.5), round(interval / 1.5)), 60, 0, 360, 255, -1, CV_AA);
+	cv::ellipse(ell_h, ell_center, cv::Size(round(interval * 0.4), round(interval * 0.8)), 60, 0, 360, 255, 2, 8);
 	cv::imshow("ellipse_q", ell_q);
 	cv::imshow("ellipse_h", ell_h);
 
 
 	//音階の認識
-	float threshold_q = 0.8f;
+	float threshold_q = 0.81f;
 	float threshold_h = 0.77f;
 
 	std::vector<noteInfo> notes_info;
@@ -667,7 +685,7 @@ int main(int argc, char* argv[])
 
 	//opencvによる楽譜認識
 	cv::Mat score = cv::imread(data);
-	//cv::imshow("score", score);
+	cv::imshow("score_input", score);
 	cv::Mat gray_score;
 	cv::Mat binarized;
 	cv::cvtColor(score, gray_score, CV_BGR2GRAY);//一応グレースケールに
@@ -766,8 +784,9 @@ int main(int argc, char* argv[])
  		drawNoteFromScale(score, note_pos.x, note_pos.y,
 			harmony_tones[i], notes_info[i].getStep(), lines_info, notes_info[i].getNoteType(),add_sharp);
 	}
-	cv::imshow("score", score);
 	cv::imwrite(savefilename, score);
+	cv::imshow("score_result", score);
+
 	cv::waitKey();
 	return 0;
 }
