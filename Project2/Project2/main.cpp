@@ -256,14 +256,14 @@ std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesIn
 	cv::Mat ell_q = cv::Mat::zeros(interval * 3 / 2, interval * 3 / 2, CV_8UC1);
 	cv::Mat ell_h = cv::Mat::zeros(interval * 3 / 2, interval * 3 / 2, CV_8UC1);
 	cv::Point ell_center = cv::Point(interval * 3 / 4, interval * 3 / 4);
-	cv::ellipse(ell_q, ell_center, cv::Size(interval / 2, interval * 2 / 3), 60, 0, 360, 255, -1, CV_AA);
-	cv::ellipse(ell_h, ell_center, cv::Size(interval * 2 / 5, interval * 3 / 4), 60, 0, 360, 255, 2, 8);
+	cv::ellipse(ell_q, ell_center, cv::Size(round(interval *0.5), round(interval / 1.5)), 60, 0, 360, 255, -1, CV_AA);
+	cv::ellipse(ell_h, ell_center, cv::Size(round(interval * 0.4), round(interval * 0.8)), 60, 0, 360, 255, 2, 8);
 	cv::imshow("ellipse_q", ell_q);
 	cv::imshow("ellipse_h", ell_h);
 
 
 	//âπäKÇÃîFéØ
-	float threshold_q = 0.8f;
+	float threshold_q = 0.81f;
 	float threshold_h = 0.77f;
 
 	std::vector<noteInfo> notes_info;
@@ -628,7 +628,7 @@ void drawNoteFromScale(cv::Mat original_image, int x, int y, int scale, int step
 int main(int argc, char* argv[])
 {
 
-	char* data = "C:/Users/MEIP-users/Documents/tulip_3.png";
+	char* data = "C:/Users/MEIP-users/Documents/tulip.png";
 	//---- âΩìxè„ÅAÇ†ÇÈÇ¢ÇÕâ∫Ç©
 	int degree = -3;
 
