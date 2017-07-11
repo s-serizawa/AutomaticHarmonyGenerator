@@ -475,13 +475,13 @@ void drawNoteFromScale(cv::Mat original_image, int x, int y, int scale, int step
 int main(int argc, char* argv[])
 {
 
-	char* data = "C:/Users/MEIP-users/Documents/flog_l.png";
+	char* data = "C:/Users/MEIP-users/Documents/tulip.png";
 	//---- 何度上、あるいは下か
 	int degree = -3;
 
 	//opencvによる楽譜認識
 	cv::Mat score = cv::imread(data);
-	//cv::imshow("score", score);
+	cv::imshow("score_input", score);
 	cv::Mat gray_score;
 	cv::Mat binarized;
 	cv::cvtColor(score, gray_score, CV_BGR2GRAY);//一応グレースケールに
@@ -572,7 +572,7 @@ int main(int argc, char* argv[])
 		drawNoteFromScale(score, notes_info[i].getPosX(), notes_info[i].getPosY() + abs(notes_info[i].getScale() - harmony_tones[i]) * lines_info.getLinesInterval() / 4, 
 			harmony_tones[i], notes_info[i].getStep(), lines_info, notes_info[i].getNoteType());
 	}
-	cv::imshow("score", score);
+	cv::imshow("score_result", score);
 
 	cv::waitKey();
 	return 0;
