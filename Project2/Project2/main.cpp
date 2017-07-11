@@ -214,10 +214,10 @@ std::vector<noteInfo> matchToPatern(cv::Mat original_image, cv::Mat image, std::
 						}
 						break;
 					}
-					else { //線の間
-						std::vector<int> v = { std::abs(y - lines_y[i]), std::abs(y - (lines_y[i - 1] + lines_y[i]) / 2), std::abs(y - lines_y[i - 1]) }; //---- 上の線の上？線の間？下の線の上？
+					else { //線の間 //---- 上の線の上？線の間？下の線の上？をまず判定
+						std::vector<int> v = { std::abs(y - lines_y[i]), std::abs(y - (lines_y[i - 1] + lines_y[i]) / 2), std::abs(y - lines_y[i - 1]) };
 						int idx = 9; //---- ミ
-						idx += (std::min_element(v.begin(), v.end()) - v.begin()) + (4 - i % 5) * 2;
+						idx += (std::min_element(v.begin(), v.end()) - v.begin()) + (4 - i % 5) * 2; //---- ここ怪しい
 						scale = notes_height[idx];
 						drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
 						step = i / 5;
@@ -506,32 +506,32 @@ cv::Point2i AssignEachNoteToImagePosition(noteInfo _note_info, linesInfo _lines_
 		break;
 	case 60:
 	case 61:
-		 y = mi_y - 3.0 * iv;
+		 y = mi_y - 2.5 * iv;
 		break;
 	case 62:
 	case 63:
-		y = mi_y - 3.5 * iv;
+		y = mi_y - 3.0 * iv;
 		break;
 	case 64: 
-		y = mi_y - 4.0 * iv;
+		y = mi_y - 3.5 * iv;
 		break;
 	case 65:
 	case 66:
-		y = mi_y - 4.5 * iv;
+		y = mi_y - 4.0 * iv;
 		break;
 	case 67:
 	case 68:
-		y = mi_y - 5.0 * iv;
+		y = mi_y - 4.5 * iv;
 		break;
 	case 69:
 	case 70:
-		y = mi_y - 5.5 * iv;
+		y = mi_y - 5.0 * iv;
 		break;
 	case 71: 
-		y = mi_y - 6.0 * iv;
+		y = mi_y - 5.5 * iv;
 		break;
 	case 72: 
-		y = mi_y - 6.5 * iv;
+		y = mi_y - 6.0 * iv;
 		break;
 	default:
 		break;
