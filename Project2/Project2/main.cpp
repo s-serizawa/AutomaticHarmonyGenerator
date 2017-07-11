@@ -101,7 +101,7 @@ void drawingNotesInfo(cv::Mat original_image, int scale, int x, int y) {
 		cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1, CV_AA);*/
 }
 
-
+//---- マッチングでnotes_info
 std::vector<noteInfo> matchToPatern(cv::Mat original_image, cv::Mat image, std::vector<noteInfo>& notes_info, cv::Mat pattern, linesInfo lines_info, float threshold, NoteType note_type) {
 	
 	int interval = lines_info.getLinesInterval();
@@ -146,16 +146,27 @@ std::vector<noteInfo> matchToPatern(cv::Mat original_image, cv::Mat image, std::
 	int scale;
 	int step;
 
+	//---- 36のドから71のシまで，interval / 2 (レとミの関係)ごとに音階を収めた配列
+	//---- 五線の下から，
+	//---- NOTE_MI は notes_height[9]に対応
+	//---- NOTE_SO は notes_height[11]に対応
+	//---- NOTE_SI は notes_height[13]に対応
+	//---- NOTE_RE_H は notes_height[15]に対応
+	//---- NOTE_FA_H は notes_height[17]に対応
+	const int notes_height[] = {36, 38, 40, 41, 43, 45, 47, 48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71};
+
 	//半音上下はなし
 	for (int i = 0; i < matches_pos.size(); i++) {
 		int x = matches_pos[i][0] + ell_center.x;
 		int y = matches_pos[i][1] + ell_center.y;
 		if (y > lines_y[lines_y.size() - 1]) {//一番下の線より下
-			scale = (y - lines_y[lines_y.size() - 1]) / (interval / 2) * (-2);
+			int idx = 9; //---- ミ
+			idx -= (y - lines_y[lines_y.size() - 1]) / (interval / 2); //---- ドの場合, -2 / レの場合，-1
+			//---- このif文は単にロバスト化か？
 			if ((y - lines_y[lines_y.size() - 1]) % (interval / 2) > (interval / 2) / 2.0) {
-				scale -= 2;
+				idx -= 1;
 			}
-			scale += NOTE_MI;
+			scale = notes_height[idx]; //---- 音階設定
 			step = lines_info.getStepsNum() - 1;
 			drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
 			notes_info.push_back(noteInfo(x, y, scale, step, note_type));
@@ -165,35 +176,38 @@ std::vector<noteInfo> matchToPatern(cv::Mat original_image, cv::Mat image, std::
 				if (y < lines_y[i]) {
 					if (i == 0) { // 一番上の線より上
 						if ((lines_y[0] - y) < ignorance_y) {
-							scale = (lines_y[i] - y) / (interval / 2) * 2;
+							int idx = 9; //---- ミ
+							idx += (lines_y[i] - y) / (interval / 2); //---- ソ(Hi)の場合，+1 / ラ（Hi）の場合，+2
 							if ((lines_y[i] - y) % (interval / 2) > (interval / 2) / 2.0) {
-								scale += 2;
+								idx += 1;
 							}
-							scale += NOTE_DO + 20;
+							scale = notes_height[idx];
 							step = 0;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
 							notes_info.push_back(noteInfo(x, y, scale, step, note_type));
 						}
 						break;
 					}
-					else if (i % 5 == 0) { //五線同士の間
+					else if (i % 5 == 0) { //五線同士の間。ミとHi-ファの間とか
 						if (y - lines_y[i - 1] < ignorance_y) {//上の五線に属する
-							scale = (y - lines_y[i - 1]) / (interval / 2) * (-2);
+							int idx = 9; //---- ミ
+							idx -= (y - lines_y[i - 1]) / (interval / 2); //---- ドの場合, -2 / レの場合，-1
 							if ((y - lines_y[i - 1]) % (interval / 2) > (interval / 2) / 2.0) {
-								scale -= 2;
+								idx -= 1;
 							}
-							scale += NOTE_MI;
+							scale = notes_height[idx];
 							step = i / 5 - 1;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
 							notes_info.push_back(noteInfo(x, y, scale, step, note_type));
 						}
 						else if (lines_y[i] - y < ignorance_y) {//下の五線に属する
-							scale = (lines_y[i] - y) / (interval / 2) * 2;
+							int idx = 9; //---- ミ
+							idx += (lines_y[i] - y) / (interval / 2); //---- ソ(Hi)の場合，+1 / ラ（Hi）の場合，+2
 							if ((lines_y[i] - y) % (interval / 2) >(interval / 2) / 2.0) {
-								scale += 2;
+								idx += 1;
 							}
 							std::cout << lines_y[0] - y << std::endl;
-							scale += NOTE_DO + 20;
+							scale = notes_height[idx];
 							step = i / 5;
 							drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
 							notes_info.push_back(noteInfo(x, y, scale, step, note_type));
@@ -201,8 +215,10 @@ std::vector<noteInfo> matchToPatern(cv::Mat original_image, cv::Mat image, std::
 						break;
 					}
 					else { //線の間
-						std::vector<int> v = { std::abs(y - lines_y[i]), std::abs(y - (lines_y[i - 1] + lines_y[i]) / 2), std::abs(y - lines_y[i - 1]) };
-						scale = (std::min_element(v.begin(), v.end()) - v.begin()) * 2 + (4 - i % 5) * 4 + NOTE_MI;
+						std::vector<int> v = { std::abs(y - lines_y[i]), std::abs(y - (lines_y[i - 1] + lines_y[i]) / 2), std::abs(y - lines_y[i - 1]) }; //---- 上の線の上？線の間？下の線の上？
+						int idx = 9; //---- ミ
+						idx += (std::min_element(v.begin(), v.end()) - v.begin()) + (4 - i % 5) * 2;
+						scale = notes_height[idx];
 						drawingNotesInfo(original_image, scale, x - ell_center.x, y - ell_center.y);
 						step = i / 5;
 						notes_info.push_back(noteInfo(x, y, scale, step, note_type));
@@ -212,6 +228,30 @@ std::vector<noteInfo> matchToPatern(cv::Mat original_image, cv::Mat image, std::
 			}
 		}
 	}
+	return notes_info;
+}
+
+std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info) {
+	int interval = lines_info.getLinesInterval();
+
+	//とりあえず4分と2分のみ
+	cv::Mat ell_q = cv::Mat::zeros(interval * 3 / 2, interval * 3 / 2, CV_8UC1);
+	cv::Mat ell_h = cv::Mat::zeros(interval * 3 / 2, interval * 3 / 2, CV_8UC1);
+	cv::Point ell_center = cv::Point(interval * 3 / 4, interval * 3 / 4);
+	cv::ellipse(ell_q, ell_center, cv::Size(interval / 2, interval * 2 / 3), 60, 0, 360, 255, -1, CV_AA);
+	cv::ellipse(ell_h, ell_center, cv::Size(interval * 2 / 5, interval * 3 / 4), 60, 0, 360, 255, 2, 8);
+	cv::imshow("ellipse_q", ell_q);
+	cv::imshow("ellipse_h", ell_h);
+
+
+	//音階の認識
+	float threshold_q = 0.8f;
+	float threshold_h = 0.77f;
+
+	std::vector<noteInfo> notes_info;
+	matchToPatern(original_image, image, notes_info, ell_q, lines_info, threshold_q, QUARTER);
+	matchToPatern(original_image, image, notes_info, ell_h, lines_info, threshold_h, HALF);
+
 	return notes_info;
 }
 
@@ -348,7 +388,6 @@ std::vector<int> determineScale(std::string _chordname) {
 	return scalenotes;
 }
 
-
 //---- 実際の音階、（コードネーム、スケール情報、）何度下情報を与えると、よさげなハモり音を返してくれる
 std::vector<int> getHarmonicNotes(std::vector<noteInfo> _note_info, std::vector<detectedText> _dictionary, int degree)
 {
@@ -403,30 +442,126 @@ std::vector<int> getHarmonicNotes(std::vector<noteInfo> _note_info, std::vector<
 	return harmony_tones;
 }
 
-std::vector<noteInfo> detectNotes(cv::Mat image, cv::Mat original_image, linesInfo lines_info){
-	int interval = lines_info.getLinesInterval();
-	
-	//とりあえず4分と2分のみ
-	cv::Mat ell_q = cv::Mat::zeros(interval * 3 / 2, interval * 3 / 2, CV_8UC1);
-	cv::Mat ell_h = cv::Mat::zeros(interval * 3 / 2, interval * 3 / 2, CV_8UC1);
-	cv::Point ell_center = cv::Point(interval * 3 / 4, interval * 3 / 4);
-	cv::ellipse(ell_q, ell_center, cv::Size(interval / 2, interval * 2 / 3), 60, 0, 360, 255, -1, CV_AA);
-	cv::ellipse(ell_h, ell_center, cv::Size(interval * 2 / 5, interval * 3 / 4), 60, 0, 360, 255, 2, 8);
-	cv::imshow("ellipse_q", ell_q);
-	cv::imshow("ellipse_h", ell_h);
+//---- 音高を画像座標に対応させる関数
+cv::Point2i AssignEachNoteToImagePosition(noteInfo _note_info, linesInfo _lines_info, bool& _add_sharp) {
+	int x = _note_info.getPosX();
+	int y;//---- 音階get
+	int mi_y = +_lines_info.getLinesY()[_note_info.getStep() * 5 + 4];
+	double iv = _lines_info.getLinesInterval();
+	int note = _note_info.getHarmonicTone();
 
-	
-	//音階の認識
-	float threshold_q = 0.8f;
-	float threshold_h = 0.77f;
-	
-	std::vector<noteInfo> notes_info;
-	matchToPatern(original_image, image, notes_info, ell_q, lines_info, threshold_q, QUARTER);
-	matchToPatern(original_image, image, notes_info, ell_h, lines_info, threshold_h, HALF);
+	//---- y座標セッティング
+	switch (note)
+	{
+	case 36:
+	case 37:
+		y = mi_y + 4.5 * iv;
+		break;
+	case 38:
+	case 39:
+		y = mi_y + 4.0 * iv;
+		break;
+	case 40:
+		y = mi_y + 3.5 * iv;
+		break;
+	case 41:
+	case 42:
+		y = mi_y + 3.0 * iv;
+		break;
+	case 43:
+	case 44:
+		y = mi_y + 2.5 * iv;
+		break;
+	case 45:
+	case 46:
+		y = mi_y + 2.0 * iv;
+		break;
+	case 47: 
+		y = mi_y + 1.5 * iv;
+		break;
+	case 48:
+	case 49:
+		y = mi_y + iv;
+		break;
+	case 50:
+	case 51:
+		y = mi_y + 0.5 * iv;
+		break;
+	case 52: y = mi_y;
+		break;
+	case 53:
+	case 54:
+		y = mi_y - 0.5 * iv;
+		break;
+	case 55:
+	case 56:
+		y = mi_y - iv;
+		break;
+	case 57:
+	case 58:
+		y = mi_y - 1.5 * iv;
+		break;
+	case 59: 
+		y = mi_y - 2.0 * iv;
+		break;
+	case 60:
+	case 61:
+		 y = mi_y - 3.0 * iv;
+		break;
+	case 62:
+	case 63:
+		y = mi_y - 3.5 * iv;
+		break;
+	case 64: 
+		y = mi_y - 4.0 * iv;
+		break;
+	case 65:
+	case 66:
+		y = mi_y - 4.5 * iv;
+		break;
+	case 67:
+	case 68:
+		y = mi_y - 5.0 * iv;
+		break;
+	case 69:
+	case 70:
+		y = mi_y - 5.5 * iv;
+		break;
+	case 71: 
+		y = mi_y - 6.0 * iv;
+		break;
+	case 72: 
+		y = mi_y - 6.5 * iv;
+		break;
+	default:
+		break;
+	}
 
-	return notes_info;
+	//---- シャープをつけるかどうかの設定
+	switch (note)
+	{
+	case 37:
+	case 39:
+	case 42:
+	case 44:
+	case 46:
+	case 49:
+	case 51:
+	case 54:
+	case 56:
+	case 58:
+	case 61:
+	case 63:
+	case 66:
+	case 68:
+	case 70:
+		_add_sharp = true;
+	default:
+		break;
+	}
+	
+	return cv::Point2i(x, y);
 }
-
 
 /*
 void drawNote(cv::Point pos, int note_type){//描く位置を直接指定 補助線は書かない
@@ -560,6 +695,7 @@ int main(int argc, char* argv[])
 	//---- 実際の音階、コードネーム、何度下情報を与えると、よさげなハモり音を返してくれる
 	std::vector<int> harmony_tones = getHarmonicNotes(notes_info, dictionary, degree);//---- harmony_tonesによさげなハモり音(実際の音高)を格納
 	for (int i = 0; i < notes_info.size(); i++) {
+		notes_info[i].setHarmonicTone(harmony_tones[i]); //---- めっちゃ頭悪そう
 		std::cout << i << std::endl;
 		std::cout << "original_notes:" << notes_info[i].getScale() << std::endl;
 		std::cout << "harmony_notes_size:" << harmony_tones.size() << std::endl;
@@ -568,8 +704,11 @@ int main(int argc, char* argv[])
 
 	//ハモリ生成
 	for (int i = 0; i < notes_info.size(); i++) {
-		int scale_change = -4;
-		drawNoteFromScale(score, notes_info[i].getPosX(), notes_info[i].getPosY() + abs(notes_info[i].getScale() - harmony_tones[i]) * lines_info.getLinesInterval() / 4, 
+		bool add_sharp = false;
+		std::cout << i << "番目のハモり音は" << notes_info[i].getHarmonicTone() << std::endl;
+		cv::Point2i note_pos = AssignEachNoteToImagePosition(notes_info[i], lines_info, add_sharp);
+		std::cout << "[x, y] = " << note_pos.x << ", " << note_pos.y << std::endl;
+ 		drawNoteFromScale(score, note_pos.x, note_pos.y,
 			harmony_tones[i], notes_info[i].getStep(), lines_info, notes_info[i].getNoteType());
 	}
 	cv::imshow("score", score);
