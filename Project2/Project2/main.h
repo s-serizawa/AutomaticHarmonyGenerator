@@ -126,6 +126,8 @@ private:
 	std::string chordname = ""; //---- その音符の乗ってるコードネーム
 	std::vector<int> scalenotes; //---- そのコードネームに対応するスケール
 	NoteType note_type;
+	int harmonic_tone;
+
 public:
 	noteInfo(int x, int y, int sc, int st, NoteType nt);
 	int getPosX();
@@ -136,6 +138,8 @@ public:
 	std::vector<int> getScalenotes();
 	void setChordname(std::string _chord_name);
 	void setScalenotes(std::vector<int> _scale_notes);
+	int getHarmonicTone();
+	void setHarmonicTone(int h_tone);
 	NoteType getNoteType();
 
 	static bool noteInfo::compareNote(noteInfo left, noteInfo right) {
@@ -178,6 +182,10 @@ std::vector<int> noteInfo::getScalenotes() {
 	return scalenotes;
 }
 
+int noteInfo::getHarmonicTone() {
+	return harmonic_tone;
+}
+
 void noteInfo::setChordname(std::string _chord_name) {
 	this->chordname = _chord_name;
 }
@@ -186,6 +194,10 @@ void noteInfo::setScalenotes(std::vector<int> _scale_notes) {
 	this->scalenotes = _scale_notes;
 
 }
+
+void noteInfo::setHarmonicTone(int h_tone) {
+	this->harmonic_tone = h_tone;
+};
 
 NoteType noteInfo::getNoteType() {
 	return note_type;
